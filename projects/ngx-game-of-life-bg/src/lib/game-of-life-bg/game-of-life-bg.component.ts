@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { GameOfLifeBgService } from './game-of-life-bg.service';
 import { CELL_SIZE, COLORS, FPS } from './game-of-life-bg.constants';
+import { Pixel } from './game-of-life-bg.model';
 
 @Component({
     selector: 'game-of-life-bg',
@@ -20,7 +21,9 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
     private golService = inject(GameOfLifeBgService);
 
     @ViewChild('game_of_life') canvas!: ElementRef<HTMLCanvasElement>;
+    @ViewChild('game_of_life_bg') prova!: ElementRef<HTMLCanvasElement>;
     private context!: CanvasRenderingContext2D;
+    private provaCon!: CanvasRenderingContext2D;
 
     private drawIntervalID!: ReturnType<typeof setInterval>;
 
@@ -44,12 +47,14 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     runSimulation = input(true);
 
-    private grid: boolean[][] = [];
+    // private grid: boolean[][] = [];
+    private grid: Pixel[][] = [];
 
     constructor() {}
 
     ngAfterViewInit() {
         this.context = this.canvas.nativeElement.getContext('2d')!;
+        this.provaCon = this.prova.nativeElement.getContext('2d')!;
         this.onResize();
 
         this.grid = this.golService.createGrid(this.gridX(), this.gridY());
@@ -63,9 +68,15 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     @HostListener('window:resize')
     private onResize() {
-        this.canvas.nativeElement.width = this.canvas.nativeElement.clientWidth;
-        this.canvas.nativeElement.height =
-            this.canvas.nativeElement.clientHeight;
+        this.canvas.nativeElement.width = this.width();
+        this.canvas.nativeElement.height = this.height();
+        this.prova.nativeElement.width = this.width();
+        this.prova.nativeElement.height = this.height();
+        // this.canvas.nativeElement.width = this.gridX();
+        // this.canvas.nativeElement.height = this.gridY();
+
+        this.provaCon.fillStyle = this.backgroundColor();
+        this.provaCon.fillRect(0, 0, this.width(), this.height());
 
         this.grid = this.golService.createGrid(this.gridX(), this.gridY());
     }
@@ -82,21 +93,49 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     /** Draws and updates the simulation on the canvas */
     private draw() {
-        if (this.runSimulation())
-            this.grid = this.golService.advanceGame(this.grid);
+        if (this.runSimulation()) this.golService.advanceGame(this.grid);
+        // this.grid = this.golService.advanceGame(this.grid);
 
-        this.context.fillStyle = this.backgroundColor();
-        this.context.fillRect(0, 0, this.width(), this.height());
-
+        // this.image();
+        // this.context.fillStyle = this.backgroundColor();
+        // this.context.fillRect(0, 0, this.width(), this.height());
+        this.context.clearRect(0, 0, this.width(), this.height());
         this.drawCells();
 
-        if (this.withGrid()) this.drawGrid();
+        // if (this.withGrid()) this.drawGrid();
+    }
+
+    private async image() {
+        const w = this.gridX();
+        const h = this.gridY();
+        const image = this.context.createImageData(w, h);
+
+        const cell = this.cellColor()
+            .replace('#', '')
+            .match(/(.{2})/g)
+            ?.map((e) => parseInt(e, 16))!;
+
+        const bg = this.backgroundColor()
+            .replace('#', '')
+            .match(/(.{2})/g)
+            ?.map((e) => parseInt(e, 16))!;
+
+        for (let x = 0; x < w; x++) {
+            for (let y = 0; y < h; y++) {
+                const i = (y * w + x) * 4;
+                image.data[i] = this.grid[x][y].state ? cell[0] : bg[0];
+                image.data[i + 1] = this.grid[x][y].state ? cell[1] : bg[1];
+                image.data[i + 2] = this.grid[x][y].state ? cell[2] : bg[2];
+                image.data[i + 3] = 255;
+            }
+        }
+        this.context.putImageData(image, 0, 0);
     }
 
     /** Draws the grid on the canvas */
     private drawGrid() {
-        this.context.strokeStyle = this.gridColor();
         this.context.beginPath();
+        this.context.strokeStyle = this.gridColor();
         for (let x = 0; x < this.width(); x += this.cellSize()) {
             this.context.moveTo(x, 0);
             this.context.lineTo(x, this.height());
@@ -110,12 +149,13 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     /** Draws every cell of the grid in the canvas */
     private drawCells() {
+        this.context.beginPath();
         this.context.fillStyle = this.cellColor();
         this.context.shadowBlur = 10;
         this.context.shadowColor = this.cellShadow();
         for (let x = 0; x < this.gridX(); x++) {
             for (let y = 0; y < this.gridY(); y++) {
-                if (this.grid[x][y]) {
+                if (this.grid[x][y].state) {
                     this.context.fillRect(
                         this.cellSize() * x,
                         this.cellSize() * y,
@@ -125,11 +165,12 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
                 }
             }
         }
+        this.context.stroke();
     }
 
     /** Canvas width updated on resize */
     private width() {
-        return this.canvas.nativeElement.width;
+        return this.canvas.nativeElement.clientWidth;
     }
     /** Grid horizontal size based on canvas width */
     private gridX() {
@@ -138,7 +179,7 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     /** Canvas height updated on resize */
     private height() {
-        return this.canvas.nativeElement.height;
+        return this.canvas.nativeElement.clientHeight;
     }
     /** Grid vertical size based on canvas height */
     private gridY() {

@@ -1,3 +1,7 @@
-<game-of-life-bg />
+<game-of-life-bg [runSimulation]="run" />
+
+<button style="position: fixed" (click)="run = !run">AVANZA</button>
+
+<div style="height: 200vh"></div>
 
 <router-outlet />

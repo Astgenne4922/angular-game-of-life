@@ -5,6 +5,6 @@ export const COLORS = {
     BACKGROUND: '#001a44',
 };
 
-export const CELL_SIZE = 10;
+export const CELL_SIZE = 5;
 
 export const FPS = 10;

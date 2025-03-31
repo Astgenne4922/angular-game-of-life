@@ -7,4 +7,4 @@ export const COLORS = {
 
 export const CELL_SIZE = 5;
 
-export const FPS = 10;
+export const FPS = 60;

@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { GameOfLifeBgService } from './game-of-life-bg.service';
 import { CELL_SIZE, COLORS, FPS } from './game-of-life-bg.constants';
-import { Pixel } from './game-of-life-bg.model';
+import { GameOfLife, Pixel } from './game-of-life-bg.model';
 
 @Component({
     selector: 'game-of-life-bg',
@@ -44,11 +44,13 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     /** Frames drawn per second. Every frame the game advances and the canvas is redrawn. Default is 10 */
     fps = input(FPS);
+    then!: number;
 
     runSimulation = input(true);
 
     // private grid: boolean[][] = [];
     private grid: Pixel[][] = [];
+    private board!: GameOfLife;
 
     constructor() {}
 
@@ -58,8 +60,11 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
         this.onResize();
 
         this.grid = this.golService.createGrid(this.gridX(), this.gridY());
+        this.board = new GameOfLife(this.gridX(), this.gridY());
 
-        this.drawIntervalID = setInterval(() => this.draw(), 1000 / this.fps());
+        // this.drawIntervalID = setInterval(() => this.draw(), 1000 / this.fps());
+        this.then = window.performance.now();
+        this.draw();
     }
 
     ngOnDestroy() {
@@ -79,6 +84,7 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
         this.provaCon.fillRect(0, 0, this.width(), this.height());
 
         this.grid = this.golService.createGrid(this.gridX(), this.gridY());
+        this.board = new GameOfLife(this.gridX(), this.gridY());
     }
 
     @HostListener('document:visibilitychange')
@@ -93,16 +99,45 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
 
     /** Draws and updates the simulation on the canvas */
     private draw() {
-        if (this.runSimulation()) this.golService.advanceGame(this.grid);
+        window.requestAnimationFrame(() => this.draw());
+
+        // if (this.runSimulation()) this.golService.advanceGame(this.grid);
         // this.grid = this.golService.advanceGame(this.grid);
 
         // this.image();
         // this.context.fillStyle = this.backgroundColor();
         // this.context.fillRect(0, 0, this.width(), this.height());
-        this.context.clearRect(0, 0, this.width(), this.height());
-        this.drawCells();
+        // this.context.clearRect(0, 0, this.width(), this.height());
+        // this.drawCells();
 
-        // if (this.withGrid()) this.drawGrid();
+        const now = window.performance.now();
+        const passed = now - this.then;
+
+        if (passed < 1000 / this.fps()) return;
+
+        const excessTime = passed % (1000 / this.fps());
+        this.then = now - excessTime;
+
+        if (this.runSimulation()) this.board.next();
+        this.drawBoard();
+        if (this.withGrid()) this.drawGrid();
+    }
+
+    private drawBoard() {
+        this.context.clearRect(0, 0, this.width(), this.height());
+
+        this.context.fillStyle = this.cellColor();
+        this.board.cells.forEach((cell, index) => {
+            if (cell & 1) {
+                const [row, column] = this.board.translate1dto2d(index);
+                this.context.fillRect(
+                    row * this.cellSize(),
+                    column * this.cellSize(),
+                    this.cellSize(),
+                    this.cellSize()
+                );
+            }
+        });
     }
 
     private async image() {

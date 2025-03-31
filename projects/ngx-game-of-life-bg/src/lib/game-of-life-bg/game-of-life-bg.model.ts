@@ -344,3 +344,91 @@ export class QuadTree {
         return ret;
     }
 }
+
+export class GameOfLife {
+    cells: Uint8Array;
+    width: number;
+    height: number;
+
+    constructor(width: number, height: number) {
+        this.width = width;
+        this.height = height;
+        this.cells = new Uint8Array(width * height);
+
+        for (let index = 0; index < this.cells.length; index++) {
+            if (Math.random() < 0.2) {
+                this.spawnCell(index);
+            }
+        }
+    }
+
+    public next() {
+        const clone = new Uint8Array(this.cells);
+
+        for (let index = 0; index < clone.length; index++) {
+            const cell = clone[index];
+            const currentState = cell & 1;
+            const neighborCount = cell >>> 1;
+
+            if (currentState || neighborCount) {
+                const nextState = this.getNextState(
+                    currentState,
+                    neighborCount
+                );
+
+                if (nextState !== currentState) {
+                    if (nextState) {
+                        this.spawnCell(index);
+                    } else {
+                        this.killCell(index);
+                    }
+                }
+            }
+        }
+    }
+
+    private getNextState(currentState: number, neighborCount: number) {
+        if (neighborCount === 3) return 1;
+        else if (neighborCount === 2) return currentState;
+        return 0;
+    }
+
+    public spawnCell(index: number): void {
+        this.cells[index] |= 1;
+        this.eachNeighbor((i) => (this.cells[i] += 0b10), index);
+    }
+
+    public killCell(index: number): void {
+        this.cells[index] &= ~1;
+        this.eachNeighbor((i) => (this.cells[i] -= 0b10), index);
+    }
+
+    private eachNeighbor(
+        operation: (index: number) => void,
+        index: number
+    ): void {
+        const [x, y] = this.translate1dto2d(index);
+
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue;
+
+                operation(this.translate2dto1d(x + dx, y + dy));
+            }
+        }
+    }
+
+    public translate1dto2d(index: number): [x: number, y: number] {
+        index =
+            ((index % (this.width * this.height)) + this.width * this.height) %
+            (this.width * this.height);
+        return [Math.floor(index / this.height), index % this.height];
+    }
+
+    public translate2dto1d(x: number, y: number): number {
+        return (
+            (((x % this.width) + this.width) % this.width) * this.height +
+            (((y % this.height) + this.height) % this.height)
+        );
+    }
+}

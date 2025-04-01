@@ -1,8 +1,15 @@
-<game-of-life-bg [runSimulation]="run" />
+<game-of-life-bg
+    [cellSize]="size"
+    [fps]="fps"
+    [showGrid]="grid"
+    gridColor="#FFFFFF"
+    [advanceGame]="run"
+/>
 
-<button (click)="run = !run">AVANZA</button>
-<textarea name="asa" id="adsad"></textarea>
-
-<div style="height: 200vh"></div>
-
-<router-outlet />
+<span>FPS: {{ fps }} - SIZE: {{ size }}</span>
+<button (click)="run = !run">{{ !run ? "RUN" : "STOP" }}</button>
+<button (click)="grid = !grid">TOGGLE GRID</button>
+<button (click)="fpsUp()">FPS +</button>
+<button (click)="fpsDown()">FPS -</button>
+<button (click)="sizeUp()">SIZE +</button>
+<button (click)="sizeDown()">SIZE -</button>

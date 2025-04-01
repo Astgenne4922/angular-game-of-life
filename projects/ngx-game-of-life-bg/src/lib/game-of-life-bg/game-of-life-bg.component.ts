@@ -1,34 +1,83 @@
 import {
     AfterViewInit,
     Component,
+    effect,
     ElementRef,
     HostListener,
-    inject,
     input,
-    OnDestroy,
     ViewChild,
 } from '@angular/core';
-import { GameOfLifeBgService } from './game-of-life-bg.service';
-import { CELL_SIZE, COLORS, FPS } from './game-of-life-bg.constants';
-import { GameOfLife, Pixel } from './game-of-life-bg.model';
+import {
+    CELL_SIZE,
+    COLORS,
+    FPS,
+    IS_EVOLVING,
+    SHOW_GRID,
+} from './game-of-life-bg.constants';
+import { GameOfLife } from './game-of-life-bg.model';
 
+/**
+ * Acts as the page background displaying Conway's Game of Life on a toroidal board.
+ *
+ * The component takes all available space in the page while remaining underneat other components.
+ * Width and height are automatically adjusted on window resize (this resets the game state creating a new board)
+ *
+ * A grid can be show over the board by setting the `showGrid` attribute. The grid is off by default
+ * ```html
+ * <game-of-life-bg showGrid="true"/>
+ * ```
+ *
+ * Colors for the background, the cells and the grid can be set with the respective attributes
+ * ```html
+ * <game-of-life-bg
+ *      backgroundColor="#001a44"
+ *      gridColor="#ffffff"
+ *      cellColor="ffffff"
+ * />
+ * ```
+ *
+ * The cells' size can be changed with the `cellSize` attribute. Changing this value causes the game state to be reset to a fresh board.
+ * The size is 5 pixels by default.
+ * ```html
+ * <game-of-life-bg cellSize="5"/>
+ * ```
+ *
+ * The speed of the game can be controlled with the `fps` attribute. Every frame the game state is advanced and the board is redrawn.
+ * The default value is 60. The update loop is managed by `window.requestAnimationFrame` which is automatically paused by the browser
+ * when the page is hidden.
+ * ```html
+ * <game-of-life-bg fps="60"/>
+ * ```
+ *
+ * The game simulation can be freely started and stopped by changing the `advanceGame` attribute. By default the game starts as soon as
+ * the the view is initialized in `ngAfterViewInit`
+ * ```html
+ * <game-of-life-bg advanceGame="true"/>
+ * ```
+ *
+ * Unless specified changing an attribute while the game is running doesn't reset the board state.
+ */
 @Component({
     selector: 'game-of-life-bg',
     templateUrl: './game-of-life-bg.component.html',
     styleUrls: ['./game-of-life-bg.component.css'],
 })
-export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
-    private golService = inject(GameOfLifeBgService);
+export class GameOfLifeBgComponent implements AfterViewInit {
+    @ViewChild('game_of_life_grid')
+    private gridCanvas!: ElementRef<HTMLCanvasElement>;
+    @ViewChild('game_of_life_board')
+    private boardCanvas!: ElementRef<HTMLCanvasElement>;
+    @ViewChild('game_of_life_bg')
+    private bgCanvas!: ElementRef<HTMLCanvasElement>;
 
-    @ViewChild('game_of_life') canvas!: ElementRef<HTMLCanvasElement>;
-    @ViewChild('game_of_life_bg') prova!: ElementRef<HTMLCanvasElement>;
-    private context!: CanvasRenderingContext2D;
-    private provaCon!: CanvasRenderingContext2D;
+    private gridContext!: CanvasRenderingContext2D;
+    private boardContext!: CanvasRenderingContext2D;
+    private bgContext!: CanvasRenderingContext2D;
 
-    private drawIntervalID!: ReturnType<typeof setInterval>;
+    private then!: number;
 
-    /** If true draws the canvas grid. Default is set to false */
-    withGrid = input(false);
+    /** When true shows a grid on the board. Default is set to false */
+    showGrid = input(SHOW_GRID);
     /** Grid color to use when drawing the grid. Default is #000000 */
     gridColor = input(COLORS.GRID);
 
@@ -39,185 +88,127 @@ export class GameOfLifeBgComponent implements AfterViewInit, OnDestroy {
     cellSize = input(CELL_SIZE);
     /** Cell color. Default color is #ffffff */
     cellColor = input(COLORS.CELL);
-    /** Cell shadow. Set a alpha of 0 for no shadow. Default color is #ffffff */
-    cellShadow = input(COLORS.CELL_SHADOW);
 
     /** Frames drawn per second. Every frame the game advances and the canvas is redrawn. Default is 10 */
     fps = input(FPS);
-    then!: number;
 
-    runSimulation = input(true);
+    /** If true the game state is advanced each frame. True by default */
+    advanceGame = input(IS_EVOLVING);
 
-    // private grid: boolean[][] = [];
-    private grid: Pixel[][] = [];
     private board!: GameOfLife;
 
-    constructor() {}
+    constructor() {
+        effect(() => {
+            if (this.showGrid() && this.gridContext) this.drawGrid();
+            else if (this.gridContext)
+                this.gridContext.clearRect(0, 0, this.width(), this.height());
+        });
+
+        effect(() => {
+            this.board = new GameOfLife(
+                Math.ceil(this.width() / this.cellSize()),
+                Math.ceil(this.height() / this.cellSize())
+            );
+        });
+    }
 
     ngAfterViewInit() {
-        this.context = this.canvas.nativeElement.getContext('2d')!;
-        this.provaCon = this.prova.nativeElement.getContext('2d')!;
+        this.gridContext = this.gridCanvas.nativeElement.getContext('2d')!;
+        this.boardContext = this.boardCanvas.nativeElement.getContext('2d')!;
+        this.bgContext = this.bgCanvas.nativeElement.getContext('2d', {
+            alpha: false,
+        })!;
+
         this.onResize();
 
-        this.grid = this.golService.createGrid(this.gridX(), this.gridY());
-        this.board = new GameOfLife(this.gridX(), this.gridY());
-
-        // this.drawIntervalID = setInterval(() => this.draw(), 1000 / this.fps());
         this.then = window.performance.now();
-        this.draw();
+        this.update();
     }
 
-    ngOnDestroy() {
-        clearInterval(this.drawIntervalID);
-    }
-
+    /**
+     * Adjusts the canvases size on window resize,
+     * redraws the background and the grid and
+     * resets the game with a fresh board
+     */
     @HostListener('window:resize')
     private onResize() {
-        this.canvas.nativeElement.width = this.width();
-        this.canvas.nativeElement.height = this.height();
-        this.prova.nativeElement.width = this.width();
-        this.prova.nativeElement.height = this.height();
-        // this.canvas.nativeElement.width = this.gridX();
-        // this.canvas.nativeElement.height = this.gridY();
+        const width = this.width();
+        const height = this.height();
 
-        this.provaCon.fillStyle = this.backgroundColor();
-        this.provaCon.fillRect(0, 0, this.width(), this.height());
+        this.bgCanvas.nativeElement.width = width;
+        this.bgCanvas.nativeElement.height = height;
 
-        this.grid = this.golService.createGrid(this.gridX(), this.gridY());
-        this.board = new GameOfLife(this.gridX(), this.gridY());
+        this.boardCanvas.nativeElement.width = width;
+        this.boardCanvas.nativeElement.height = height;
+
+        this.gridCanvas.nativeElement.width = width;
+        this.gridCanvas.nativeElement.height = height;
+
+        this.bgContext.fillStyle = this.backgroundColor();
+        this.bgContext.fillRect(0, 0, width, height);
+
+        this.board = new GameOfLife(this.boardWidth(), this.boardHeight());
+
+        if (this.showGrid()) this.drawGrid();
     }
 
-    @HostListener('document:visibilitychange')
-    private onVisibilityChange() {
-        if (document.hidden) clearInterval(this.drawIntervalID);
-        else
-            this.drawIntervalID = setInterval(
-                () => this.draw(),
-                1000 / this.fps()
-            );
-    }
-
-    /** Draws and updates the simulation on the canvas */
-    private draw() {
-        window.requestAnimationFrame(() => this.draw());
-
-        // if (this.runSimulation()) this.golService.advanceGame(this.grid);
-        // this.grid = this.golService.advanceGame(this.grid);
-
-        // this.image();
-        // this.context.fillStyle = this.backgroundColor();
-        // this.context.fillRect(0, 0, this.width(), this.height());
-        // this.context.clearRect(0, 0, this.width(), this.height());
-        // this.drawCells();
+    /** Draws and updates the simulation on the board canvas */
+    private update() {
+        window.requestAnimationFrame(() => this.update());
 
         const now = window.performance.now();
         const passed = now - this.then;
 
-        if (passed < 1000 / this.fps()) return;
+        const msPF = 1000 / this.fps();
+        if (passed < msPF) return;
 
-        const excessTime = passed % (1000 / this.fps());
+        const excessTime = passed % msPF;
         this.then = now - excessTime;
 
-        if (this.runSimulation()) this.board.next();
-        this.drawBoard();
-        if (this.withGrid()) this.drawGrid();
+        if (this.advanceGame()) this.board.next();
+        this.board.drawBoard(
+            this.boardContext,
+            this.cellSize(),
+            this.cellColor()
+        );
     }
 
-    private drawBoard() {
-        this.context.clearRect(0, 0, this.width(), this.height());
-
-        this.context.fillStyle = this.cellColor();
-        this.board.cells.forEach((cell, index) => {
-            if (cell & 1) {
-                const [row, column] = this.board.translate1dto2d(index);
-                this.context.fillRect(
-                    row * this.cellSize(),
-                    column * this.cellSize(),
-                    this.cellSize(),
-                    this.cellSize()
-                );
-            }
-        });
-    }
-
-    private async image() {
-        const w = this.gridX();
-        const h = this.gridY();
-        const image = this.context.createImageData(w, h);
-
-        const cell = this.cellColor()
-            .replace('#', '')
-            .match(/(.{2})/g)
-            ?.map((e) => parseInt(e, 16))!;
-
-        const bg = this.backgroundColor()
-            .replace('#', '')
-            .match(/(.{2})/g)
-            ?.map((e) => parseInt(e, 16))!;
-
-        for (let x = 0; x < w; x++) {
-            for (let y = 0; y < h; y++) {
-                const i = (y * w + x) * 4;
-                image.data[i] = this.grid[x][y].state ? cell[0] : bg[0];
-                image.data[i + 1] = this.grid[x][y].state ? cell[1] : bg[1];
-                image.data[i + 2] = this.grid[x][y].state ? cell[2] : bg[2];
-                image.data[i + 3] = 255;
-            }
-        }
-        this.context.putImageData(image, 0, 0);
-    }
-
-    /** Draws the grid on the canvas */
+    /** Draws a grid on the designated canvas */
     private drawGrid() {
-        this.context.beginPath();
-        this.context.strokeStyle = this.gridColor();
-        for (let x = 0; x < this.width(); x += this.cellSize()) {
-            this.context.moveTo(x, 0);
-            this.context.lineTo(x, this.height());
-        }
-        for (let y = 0; y < this.height(); y += this.cellSize()) {
-            this.context.moveTo(0, y);
-            this.context.lineTo(this.width(), y);
-        }
-        this.context.stroke();
-    }
+        const width = this.width();
+        const height = this.height();
+        const cellSize = this.cellSize();
 
-    /** Draws every cell of the grid in the canvas */
-    private drawCells() {
-        this.context.beginPath();
-        this.context.fillStyle = this.cellColor();
-        this.context.shadowBlur = 10;
-        this.context.shadowColor = this.cellShadow();
-        for (let x = 0; x < this.gridX(); x++) {
-            for (let y = 0; y < this.gridY(); y++) {
-                if (this.grid[x][y].state) {
-                    this.context.fillRect(
-                        this.cellSize() * x,
-                        this.cellSize() * y,
-                        this.cellSize(),
-                        this.cellSize()
-                    );
-                }
-            }
+        this.gridContext.clearRect(0, 0, width, height);
+
+        this.gridContext.beginPath();
+        this.gridContext.strokeStyle = this.gridColor();
+        for (let x = 0; x < width; x += cellSize) {
+            this.gridContext.moveTo(x, 0);
+            this.gridContext.lineTo(x, height);
         }
-        this.context.stroke();
+        for (let y = 0; y < height; y += cellSize) {
+            this.gridContext.moveTo(0, y);
+            this.gridContext.lineTo(width, y);
+        }
+        this.gridContext.stroke();
     }
 
     /** Canvas width updated on resize */
     private width() {
-        return this.canvas.nativeElement.clientWidth;
+        return window.innerWidth;
     }
-    /** Grid horizontal size based on canvas width */
-    private gridX() {
+    /** Horizontal size of the board */
+    private boardWidth() {
         return Math.ceil(this.width() / this.cellSize());
     }
 
     /** Canvas height updated on resize */
     private height() {
-        return this.canvas.nativeElement.clientHeight;
+        return window.innerHeight;
     }
-    /** Grid vertical size based on canvas height */
-    private gridY() {
+    /** Vertical size of the board */
+    private boardHeight() {
         return Math.ceil(this.height() / this.cellSize());
     }
 }

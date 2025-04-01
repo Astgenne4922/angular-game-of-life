@@ -1,316 +1,116 @@
-export class Pixel {
-    state = false;
-    nextState?: boolean;
+/**
+ * Represents Conway's Game of Life with a toroidal board with sides `width` by `height`
+ *
+ * Each cell is represented with 5 bits and stored in 1 byte:
+ * ┌───────┬─────────┬───┐
+ * │ 7 6 5 │ 4 3 2 1 │ 0 │
+ * └───┬───┴────┬────┴─┬─┘
+ *     │        │      │
+ *     │        │  Cell state
+ *     │  Live neighbours count
+ *  Unused
+ */
+export class GameOfLife {
+    cells: Uint8Array;
+    width: number;
+    height: number;
 
-    constructor(s: boolean) {
-        this.state = s;
-    }
-}
+    constructor(width: number, height: number, spawnRate = 0.3) {
+        this.width = width;
+        this.height = height;
+        this.cells = new Uint8Array(width * height);
 
-export class QuadNode {
-    nw: QuadNode | null;
-    ne: QuadNode | null;
-    sw: QuadNode | null;
-    se: QuadNode | null;
-
-    level: number;
-    population: number;
-
-    id: string;
-
-    private constructor(
-        nw: QuadNode | null,
-        ne: QuadNode | null,
-        sw: QuadNode | null,
-        se: QuadNode | null,
-        level: number,
-        population: number
-    ) {
-        this.nw = nw;
-        this.ne = ne;
-        this.sw = sw;
-        this.se = se;
-
-        this.level = level;
-        this.population = population;
-
-        this.id = crypto.randomUUID();
+        for (let index = 0; index < this.cells.length; index++) {
+            if (Math.random() < spawnRate) this.spawnCell(index);
+        }
     }
 
-    static alive = new QuadNode(null, null, null, null, 0, 1);
-    static dead = new QuadNode(null, null, null, null, 0, 0);
+    /** Adavnces the game state by one generation */
+    public next() {
+        const clone = new Uint8Array(this.cells);
 
-    static cache = new Map<string, QuadNode>();
+        for (let index = 0; index < clone.length; index++) {
+            const isAlive = clone[index] & 1;
+            const aliveNeighbor = clone[index] >>> 1;
 
-    static create(
-        nw: QuadNode,
-        ne: QuadNode,
-        sw: QuadNode,
-        se: QuadNode
-    ): QuadNode {
-        const hash = QuadNode.hash(nw, ne, sw, se);
-        if (QuadNode.cache.has(hash)) return QuadNode.cache.get(hash)!;
-        const node = new QuadNode(
-            nw,
-            ne,
-            sw,
-            se,
-            ne.level + 1,
-            nw.population + ne.population + sw.population + se.population
-        );
-        QuadNode.cache.set(hash, node);
-        return node;
-    }
+            if (!(isAlive || aliveNeighbor)) continue;
 
-    static hash(nw: QuadNode, ne: QuadNode, sw: QuadNode, se: QuadNode) {
-        return nw.id + ne.id + sw.id + se.id;
-    }
+            const nextState =
+                aliveNeighbor === 3 ? 1 : aliveNeighbor === 2 ? isAlive : 0;
 
-    static zero(level: number): QuadNode {
-        if (level === 0) return this.dead;
-
-        return QuadNode.create(
-            QuadNode.zero(level - 1),
-            QuadNode.zero(level - 1),
-            QuadNode.zero(level - 1),
-            QuadNode.zero(level - 1)
-        );
-    }
-
-    static expand(node: QuadNode): QuadNode {
-        const z = QuadNode.zero(node.level - 1);
-        return QuadNode.create(
-            QuadNode.create(z, z, z, node.nw!),
-            QuadNode.create(z, z, node.ne!, z),
-            QuadNode.create(z, node.sw!, z, z),
-            QuadNode.create(node.se!, z, z, z)
-        );
-    }
-
-    static centeredSubSubnode(node: QuadNode) {
-        return QuadNode.create(
-            node.nw!.se!.se!,
-            node.ne!.sw!.sw!,
-            node.sw!.ne!.ne!,
-            node.se!.nw!.nw!
-        );
-    }
-
-    setBit(x: number, y: number, c: boolean) {
-        if (this.level === 1) {
-            const cell = c ? QuadNode.alive : QuadNode.dead;
-            if (x < 0) {
-                if (y < 0)
-                    return QuadNode.create(cell, this.ne!, this.sw!, this.se!);
-                else return QuadNode.create(this.nw!, this.ne!, cell, this.se!);
-            } else {
-                if (y < 0)
-                    return QuadNode.create(this.nw!, cell, this.sw!, this.se!);
-                else return QuadNode.create(this.nw!, this.ne!, this.sw!, cell);
+            if (nextState !== isAlive) {
+                if (nextState) this.spawnCell(index);
+                else this.killCell(index);
             }
         }
-        const val = Math.pow(2, this.level - 2);
-        let nw = this.nw!,
-            ne = this.ne!,
-            sw = this.sw!,
-            se = this.se!;
-        if (x < 0) {
-            if (y < 0) nw = this.nw!.setBit(x + val, y + val, c);
-            else sw = this.sw!.setBit(x + val, y - val, c);
-        } else {
-            if (y < 0) ne = this.ne!.setBit(x - val, y + val, c);
-            else se = this.se!.setBit(x - val, y - val, c);
-        }
-
-        return QuadNode.create(nw, ne, sw, se);
     }
 
-    private calculateNextState(): QuadNode {
-        const sumNw =
-            this.nw!.nw!.population +
-            this.nw!.ne!.population +
-            this.ne!.nw!.population +
-            this.nw!.sw!.population +
-            this.ne!.sw!.population +
-            this.sw!.nw!.population +
-            this.sw!.ne!.population +
-            this.se!.nw!.population;
-        const sumNe =
-            this.nw!.ne!.population +
-            this.ne!.nw!.population +
-            this.ne!.ne!.population +
-            this.nw!.se!.population +
-            this.ne!.se!.population +
-            this.sw!.ne!.population +
-            this.se!.nw!.population +
-            this.se!.ne!.population;
-        const sumSw =
-            this.nw!.sw!.population +
-            this.nw!.se!.population +
-            this.ne!.sw!.population +
-            this.sw!.nw!.population +
-            this.se!.nw!.population +
-            this.sw!.sw!.population +
-            this.sw!.se!.population +
-            this.se!.sw!.population;
-        const sumSe =
-            this.nw!.se!.population +
-            this.ne!.sw!.population +
-            this.ne!.se!.population +
-            this.sw!.ne!.population +
-            this.se!.ne!.population +
-            this.sw!.se!.population +
-            this.se!.sw!.population +
-            this.se!.se!.population;
+    /** Draws the live cells on a html canvas context as squares with side of length `cellSize` using the specified `cellColor`.
+     * The size of the canvas is calculated with the size of the cells array and `cellSize`
+     */
+    public drawBoard(
+        context: CanvasRenderingContext2D,
+        cellSize: number,
+        cellColor: string
+    ) {
+        context.clearRect(0, 0, this.width * cellSize, this.height * cellSize);
 
-        const nw =
-            (sumNw === 2 && this.nw!.se!.population === 1) || sumNw === 3
-                ? QuadNode.alive
-                : QuadNode.dead;
-        const ne =
-            (sumNe === 2 && this.ne!.sw!.population === 1) || sumNe === 3
-                ? QuadNode.alive
-                : QuadNode.dead;
-        const sw =
-            (sumSw === 2 && this.sw!.ne!.population === 1) || sumSw === 3
-                ? QuadNode.alive
-                : QuadNode.dead;
-        const se =
-            (sumSe === 2 && this.se!.nw!.population === 1) || sumSe === 3
-                ? QuadNode.alive
-                : QuadNode.dead;
+        context.fillStyle = cellColor;
+        for (let index = 0; index < this.cells.length; index++) {
+            if (!(this.cells[index] & 1)) continue;
 
-        return QuadNode.create(nw, ne, sw, se);
-    }
-
-    static step(node: QuadNode): QuadNode {
-        if (node.population === 0) return node.nw!;
-        if (node.level == 2) {
-            return node.calculateNextState();
-        } else {
-            const c1 = QuadNode.step(
-                QuadNode.create(
-                    node.nw!.nw!,
-                    node.nw!.ne!,
-                    node.nw!.sw!,
-                    node.nw!.se!
-                )
-            );
-            const c2 = QuadNode.step(
-                QuadNode.create(
-                    node.nw!.ne!,
-                    node.ne!.nw!,
-                    node.nw!.se!,
-                    node.ne!.sw!
-                )
-            );
-            const c3 = QuadNode.step(
-                QuadNode.create(
-                    node.ne!.nw!,
-                    node.ne!.ne!,
-                    node.ne!.sw!,
-                    node.ne!.se!
-                )
-            );
-            const c4 = QuadNode.step(
-                QuadNode.create(
-                    node.nw!.sw!,
-                    node.nw!.se!,
-                    node.sw!.nw!,
-                    node.sw!.ne!
-                )
-            );
-            const c5 = QuadNode.step(
-                QuadNode.create(
-                    node.nw!.se!,
-                    node.ne!.sw!,
-                    node.sw!.ne!,
-                    node.se!.nw!
-                )
-            );
-            const c6 = QuadNode.step(
-                QuadNode.create(
-                    node.ne!.sw!,
-                    node.ne!.se!,
-                    node.se!.nw!,
-                    node.se!.ne!
-                )
-            );
-            const c7 = QuadNode.step(
-                QuadNode.create(
-                    node.sw!.nw!,
-                    node.sw!.ne!,
-                    node.sw!.sw!,
-                    node.sw!.se!
-                )
-            );
-            const c8 = QuadNode.step(
-                QuadNode.create(
-                    node.sw!.ne!,
-                    node.se!.nw!,
-                    node.sw!.se!,
-                    node.se!.sw!
-                )
-            );
-            const c9 = QuadNode.step(
-                QuadNode.create(
-                    node.se!.nw!,
-                    node.se!.ne!,
-                    node.se!.sw!,
-                    node.se!.se!
-                )
-            );
-
-            return QuadNode.create(
-                QuadNode.step(QuadNode.create(c1, c2, c4, c5)),
-                QuadNode.step(QuadNode.create(c2, c3, c5, c6)),
-                QuadNode.step(QuadNode.create(c4, c5, c7, c8)),
-                QuadNode.step(QuadNode.create(c5, c6, c8, c9))
-            );
-        }
-    }
-}
-
-export class QuadTree {
-    root: QuadNode;
-
-    constructor() {
-        this.root = QuadNode.zero(3);
-    }
-
-    expandTo(x: number, y: number) {
-        while (
-            Math.max(x, y) >= Math.pow(2, this.root.level - 1) ||
-            Math.min(x, y) < -Math.pow(2, this.root.level - 1)
-        ) {
-            this.root = QuadNode.expand(this.root);
+            const { x, y } = this.translate1dto2d(index);
+            context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
     }
 
-    set(x: number, y: number, c: boolean) {
-        this.expandTo(x, y);
-        this.root = this.root.setBit(x, y, c);
+    /** Sets the selected cell as alive */
+    public spawnCell(index: number) {
+        this.cells[index] |= 1;
+        const { x, y } = this.translate1dto2d(index);
+
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                this.cells[this.translate2dto1d(x + dx, y + dy)] += 0b10;
+            }
+        }
     }
 
-    step() {
-        while (
-            this.root.level < 2 ||
-            QuadNode.centeredSubSubnode(this.root).population !==
-                this.root.population
-        )
-            this.root = QuadNode.expand(this.root);
-        this.root = QuadNode.step(this.root);
+    /** Sets the selected cell as dead */
+    public killCell(index: number) {
+        this.cells[index] &= ~1;
+        const { x, y } = this.translate1dto2d(index);
+
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                this.cells[this.translate2dto1d(x + dx, y + dy)] -= 0b10;
+            }
+        }
+    }
+
+    /** Converts an index to 2-dimensional coordinates  */
+    public translate1dto2d(index: number): { x: number; y: number } {
+        index =
+            ((index % (this.width * this.height)) + this.width * this.height) %
+            (this.width * this.height);
+        return { x: Math.floor(index / this.height), y: index % this.height };
+    }
+
+    /** Converts 2-dimensional cooridnate to an index */
+    public translate2dto1d(x: number, y: number): number {
+        return (
+            (((x % this.width) + this.width) % this.width) * this.height +
+            (((y % this.height) + this.height) % this.height)
+        );
     }
 
     static fromRLE() {
         const rle =
             '2b3o3b3o$$o4bobo4bo$o4bobo4bo$o4bobo4bo$2b3o3b3o$$2b3o3b3o$o4bobo4bo$o4bobo4bo$o4bobo4bo$$2b3o3b3o!';
-        const universe = new this();
-        const cells = QuadTree.decode(rle);
-        for (const [x, y] of cells) {
-            universe.set(x, y, true);
-        }
-        return universe;
+        const cells = GameOfLife.decode(rle);
+        return new GameOfLife(cells.length, cells[0].length);
     }
 
     static decode(rle: string) {
@@ -342,93 +142,5 @@ export class QuadTree {
         const ret = [];
         for (const [x, y] of cells) ret.push([x - dx, y - dy]);
         return ret;
-    }
-}
-
-export class GameOfLife {
-    cells: Uint8Array;
-    width: number;
-    height: number;
-
-    constructor(width: number, height: number) {
-        this.width = width;
-        this.height = height;
-        this.cells = new Uint8Array(width * height);
-
-        for (let index = 0; index < this.cells.length; index++) {
-            if (Math.random() < 0.2) {
-                this.spawnCell(index);
-            }
-        }
-    }
-
-    public next() {
-        const clone = new Uint8Array(this.cells);
-
-        for (let index = 0; index < clone.length; index++) {
-            const cell = clone[index];
-            const currentState = cell & 1;
-            const neighborCount = cell >>> 1;
-
-            if (currentState || neighborCount) {
-                const nextState = this.getNextState(
-                    currentState,
-                    neighborCount
-                );
-
-                if (nextState !== currentState) {
-                    if (nextState) {
-                        this.spawnCell(index);
-                    } else {
-                        this.killCell(index);
-                    }
-                }
-            }
-        }
-    }
-
-    private getNextState(currentState: number, neighborCount: number) {
-        if (neighborCount === 3) return 1;
-        else if (neighborCount === 2) return currentState;
-        return 0;
-    }
-
-    public spawnCell(index: number): void {
-        this.cells[index] |= 1;
-        this.eachNeighbor((i) => (this.cells[i] += 0b10), index);
-    }
-
-    public killCell(index: number): void {
-        this.cells[index] &= ~1;
-        this.eachNeighbor((i) => (this.cells[i] -= 0b10), index);
-    }
-
-    private eachNeighbor(
-        operation: (index: number) => void,
-        index: number
-    ): void {
-        const [x, y] = this.translate1dto2d(index);
-
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-                if (dx === 0 && dy === 0) continue;
-
-                operation(this.translate2dto1d(x + dx, y + dy));
-            }
-        }
-    }
-
-    public translate1dto2d(index: number): [x: number, y: number] {
-        index =
-            ((index % (this.width * this.height)) + this.width * this.height) %
-            (this.width * this.height);
-        return [Math.floor(index / this.height), index % this.height];
-    }
-
-    public translate2dto1d(x: number, y: number): number {
-        return (
-            (((x % this.width) + this.width) % this.width) * this.height +
-            (((y % this.height) + this.height) % this.height)
-        );
     }
 }

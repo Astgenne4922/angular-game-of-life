@@ -12,6 +12,7 @@ import {
     COLORS,
     FPS,
     IS_EVOLVING,
+    PATTERNS,
     SHOW_GRID,
 } from './game-of-life-bg.constants';
 import { GameOfLife } from './game-of-life-bg.model';
@@ -105,9 +106,16 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         });
 
         effect(() => {
-            this.board = new GameOfLife(
+            // this.board = new GameOfLife(
+            //     Math.ceil(this.width() / this.cellSize()),
+            //     Math.ceil(this.height() / this.cellSize())
+            // );
+            this.board = GameOfLife.fromRLE(
                 Math.ceil(this.width() / this.cellSize()),
-                Math.ceil(this.height() / this.cellSize())
+                Math.ceil(this.height() / this.cellSize()),
+                PATTERNS.gunstar2.rle,
+                PATTERNS.gunstar2.x,
+                PATTERNS.gunstar2.y
             );
         });
     }
@@ -147,7 +155,14 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         this.bgContext.fillStyle = this.backgroundColor();
         this.bgContext.fillRect(0, 0, width, height);
 
-        this.board = new GameOfLife(this.boardWidth(), this.boardHeight());
+        // this.board = new GameOfLife(this.boardWidth(), this.boardHeight());
+        this.board = GameOfLife.fromRLE(
+            this.boardWidth(),
+            this.boardHeight(),
+            PATTERNS.gunstar2.rle,
+            PATTERNS.gunstar2.x,
+            PATTERNS.gunstar2.y
+        );
 
         if (this.showGrid()) this.drawGrid();
     }

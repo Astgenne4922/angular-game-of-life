@@ -106,41 +106,33 @@ export class GameOfLife {
         );
     }
 
-    static fromRLE() {
-        const rle =
-            '2b3o3b3o$$o4bobo4bo$o4bobo4bo$o4bobo4bo$2b3o3b3o$$2b3o3b3o$o4bobo4bo$o4bobo4bo$o4bobo4bo$$2b3o3b3o!';
-        const cells = GameOfLife.decode(rle);
-        return new GameOfLife(cells.length, cells[0].length);
-    }
+    static fromRLE(
+        width: number,
+        height: number,
+        rle: string,
+        dx: number,
+        dy: number
+    ) {
+        const gol = new GameOfLife(width, height, 0);
+        const list = rle.slice(0, -1).split('$');
+        const re = /(\d*)(o|b)|(\d+)/g;
 
-    static decode(rle: string) {
-        const rows = rle.slice(0, -1).split('$');
-        const cells = [];
-        let row = 0,
-            numCols = 0;
-        for (let i = 0; i < rows.length; i++) {
-            let index = 0,
-                re = /([0-9]*)(o|b)|([0-9]+)/g;
-            let match;
-            while ((match = re.exec(rows[i])) !== null) {
-                if (!match[2]) {
-                    row += parseInt(match[3]) - 1;
-                    break;
+        let y = Math.floor(height / 2) - Math.floor(dy / 2);
+        for (const e of list) {
+            let x = Math.floor(width / 2) - Math.floor(dx / 2);
+            const match = e.match(re)!;
+            for (const m of match) {
+                if (/^\d+$/.test(m)) y += parseInt(m) - 1;
+                const c = m.length === 1 ? 1 : parseInt(m.slice(0, -1));
+                for (let i = 0; i < c; i++) {
+                    if (m.at(-1) === 'o')
+                        gol.spawnCell(gol.translate2dto1d(x, y));
+                    x++;
                 }
-                const num = parseInt(match[1].length !== 0 ? match[1] : '1');
-                if (match[2] === 'o') {
-                    for (let col = index; col < index + num; col++)
-                        cells.push([col, row]);
-                }
-                index += num;
-                numCols = Math.max(numCols, index);
             }
-            row++;
+            y++;
         }
-        const dy = Math.floor(row / 2),
-            dx = Math.floor(numCols / 2);
-        const ret = [];
-        for (const [x, y] of cells) ret.push([x - dx, y - dy]);
-        return ret;
+
+        return gol;
     }
 }

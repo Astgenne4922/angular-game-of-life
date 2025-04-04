@@ -12,6 +12,7 @@ import {
     COLORS,
     FPS,
     IS_EVOLVING,
+    PATTERN_NAMES,
     PATTERNS,
     SHOW_GRID,
 } from './game-of-life-bg.constants';
@@ -106,16 +107,9 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         });
 
         effect(() => {
-            // this.board = new GameOfLife(
-            //     Math.ceil(this.width() / this.cellSize()),
-            //     Math.ceil(this.height() / this.cellSize())
-            // );
-            this.board = GameOfLife.fromRLE(
+            this.resetBoard(
                 Math.ceil(this.width() / this.cellSize()),
-                Math.ceil(this.height() / this.cellSize()),
-                PATTERNS.gunstar2.rle,
-                PATTERNS.gunstar2.x,
-                PATTERNS.gunstar2.y
+                Math.ceil(this.height() / this.cellSize())
             );
         });
     }
@@ -155,14 +149,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         this.bgContext.fillStyle = this.backgroundColor();
         this.bgContext.fillRect(0, 0, width, height);
 
-        // this.board = new GameOfLife(this.boardWidth(), this.boardHeight());
-        this.board = GameOfLife.fromRLE(
-            this.boardWidth(),
-            this.boardHeight(),
-            PATTERNS.gunstar2.rle,
-            PATTERNS.gunstar2.x,
-            PATTERNS.gunstar2.y
-        );
+        this.resetBoard(this.boardWidth(), this.boardHeight());
 
         if (this.showGrid()) this.drawGrid();
     }
@@ -207,6 +194,17 @@ export class GameOfLifeBgComponent implements AfterViewInit {
             this.gridContext.lineTo(width, y);
         }
         this.gridContext.stroke();
+    }
+
+    private resetBoard(width: number, height: number) {
+        // this.board = GameOfLife.random(width, height);
+        this.board = GameOfLife.fromRLE(
+            width,
+            height,
+            PATTERNS[
+                PATTERN_NAMES[Math.floor(Math.random() * PATTERN_NAMES.length)]
+            ]
+        );
     }
 
     /** Canvas width updated on resize */

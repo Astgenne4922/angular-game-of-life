@@ -15,14 +15,10 @@ export class GameOfLife {
     width: number;
     height: number;
 
-    constructor(width: number, height: number, spawnRate = 0.3) {
+    constructor(width: number, height: number) {
         this.width = width;
         this.height = height;
         this.cells = new Uint8Array(width * height);
-
-        for (let index = 0; index < this.cells.length; index++) {
-            if (Math.random() < spawnRate) this.spawnCell(index);
-        }
     }
 
     /** Adavnces the game state by one generation */
@@ -39,8 +35,8 @@ export class GameOfLife {
                 aliveNeighbor === 3 ? 1 : aliveNeighbor === 2 ? isAlive : 0;
 
             if (nextState !== isAlive) {
-                if (nextState) this.spawnCell(index);
-                else this.killCell(index);
+                if (nextState) this.spawnCellbyIndex(index);
+                else this.killCellbyIndex(index);
             }
         }
     }
@@ -65,7 +61,10 @@ export class GameOfLife {
     }
 
     /** Sets the selected cell as alive */
-    public spawnCell(index: number) {
+    public spawnCellbyCoord(x: number, y: number) {
+        this.spawnCellbyIndex(this.translate2dto1d(x, y));
+    }
+    public spawnCellbyIndex(index: number) {
         this.cells[index] |= 1;
         const { x, y } = this.translate1dto2d(index);
 
@@ -78,7 +77,10 @@ export class GameOfLife {
     }
 
     /** Sets the selected cell as dead */
-    public killCell(index: number) {
+    public killCellbyCoord(x: number, y: number) {
+        this.killCellbyIndex(this.translate2dto1d(x, y));
+    }
+    public killCellbyIndex(index: number) {
         this.cells[index] &= ~1;
         const { x, y } = this.translate1dto2d(index);
 
@@ -106,31 +108,42 @@ export class GameOfLife {
         );
     }
 
-    static fromRLE(
-        width: number,
-        height: number,
-        rle: string,
-        dx: number,
-        dy: number
-    ) {
-        const gol = new GameOfLife(width, height, 0);
-        const list = rle.slice(0, -1).split('$');
-        const re = /(\d*)(o|b)|(\d+)/g;
+    static random(width: number, height: number, spawnRate = 0.3) {
+        const gol = new GameOfLife(width, height);
 
-        let y = Math.floor(height / 2) - Math.floor(dy / 2);
-        for (const e of list) {
-            let x = Math.floor(width / 2) - Math.floor(dx / 2);
-            const match = e.match(re)!;
-            for (const m of match) {
-                if (/^\d+$/.test(m)) y += parseInt(m) - 1;
-                const c = m.length === 1 ? 1 : parseInt(m.slice(0, -1));
-                for (let i = 0; i < c; i++) {
-                    if (m.at(-1) === 'o')
-                        gol.spawnCell(gol.translate2dto1d(x, y));
-                    x++;
-                }
+        for (let index = 0; index < gol.cells.length; index++) {
+            if (Math.random() < spawnRate) gol.spawnCellbyIndex(index);
+        }
+    }
+
+    static fromRLE(width: number, height: number, rle: string) {
+        const size_and_pattern =
+            /(?:^#.*\n)*^x\s?=\s?(\d+),\s?y\s?=\s?(\d+).*\n((?:.+\n?)+)/gm;
+        const run_length_tags = /\d*[bo$]/gm;
+
+        const [_, dx, dy, pattern] = size_and_pattern.exec(rle)!;
+
+        const gol = new GameOfLife(width, height);
+
+        let y = Math.floor(height / 2) - Math.floor(parseInt(dy) / 2);
+        let x = Math.floor(width / 2) - Math.floor(parseInt(dx) / 2);
+
+        const rules = pattern.match(run_length_tags)!;
+        for (const rule of rules) {
+            const c = rule.length === 1 ? 1 : parseInt(rule.slice(0, -1));
+
+            switch (rule.at(-1)) {
+                case 'b':
+                    x += c;
+                    break;
+                case 'o':
+                    for (let i = 0; i < c; i++) gol.spawnCellbyCoord(x++, y);
+                    break;
+                case '$':
+                    x = Math.floor(width / 2) - Math.floor(parseInt(dx) / 2);
+                    y += c;
+                    break;
             }
-            y++;
         }
 
         return gol;

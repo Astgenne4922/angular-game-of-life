@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { GameOfLifeBgComponent } from 'ngx-game-of-life-bg';
+import { GameOfLifeBgComponent, PATTERN_NAMES } from 'ngx-game-of-life-bg';
 
 @Component({
     selector: 'app-root',
@@ -12,6 +12,7 @@ export class AppComponent {
     fps = 60;
     size = 5;
     run = true;
+    patterns = PATTERN_NAMES;
 
     fpsUp() {
         this.fps += 5;

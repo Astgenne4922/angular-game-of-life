@@ -14,11 +14,13 @@ export class GameOfLife {
     cells: Uint8Array;
     width: number;
     height: number;
+    isToroidal: boolean;
 
-    constructor(width: number, height: number) {
+    constructor(width: number, height: number, isToroidal = true) {
         this.width = width;
         this.height = height;
         this.cells = new Uint8Array(width * height);
+        this.isToroidal = isToroidal;
     }
 
     /** Adavnces the game state by one generation */
@@ -47,15 +49,22 @@ export class GameOfLife {
     public drawBoard(
         context: CanvasRenderingContext2D,
         cellSize: number,
-        cellColor: string
+        cellColor: string,
+        bgColor: string
     ) {
         context.clearRect(0, 0, this.width * cellSize, this.height * cellSize);
 
-        context.fillStyle = cellColor;
         for (let index = 0; index < this.cells.length; index++) {
             if (!(this.cells[index] & 1)) continue;
 
             const { x, y } = this.translate1dto2d(index);
+            if (cellSize >= 10) {
+                context.beginPath();
+                context.fillStyle = bgColor;
+                context.rect(x * cellSize, y * cellSize, cellSize, cellSize);
+                context.stroke();
+            }
+            context.fillStyle = cellColor;
             context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
     }
@@ -71,6 +80,14 @@ export class GameOfLife {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 if (dx === 0 && dy === 0) continue;
+                if (
+                    !this.isToroidal &&
+                    (x + dx < 0 ||
+                        x + dx === this.width ||
+                        y + dy < 0 ||
+                        y + dy === this.height)
+                )
+                    continue;
                 this.cells[this.translate2dto1d(x + dx, y + dy)] += 0b10;
             }
         }
@@ -87,6 +104,14 @@ export class GameOfLife {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 if (dx === 0 && dy === 0) continue;
+                if (
+                    !this.isToroidal &&
+                    (x + dx < 0 ||
+                        x + dx === this.width ||
+                        y + dy < 0 ||
+                        y + dy === this.height)
+                )
+                    continue;
                 this.cells[this.translate2dto1d(x + dx, y + dy)] -= 0b10;
             }
         }
@@ -108,25 +133,36 @@ export class GameOfLife {
         );
     }
 
-    static random(width: number, height: number, spawnRate = 0.3) {
-        const gol = new GameOfLife(width, height);
+    static random(
+        width: number,
+        height: number,
+        { spawnRate = 0.3, isToroidal = true } = {}
+    ) {
+        const gol = new GameOfLife(width, height, isToroidal);
 
         for (let index = 0; index < gol.cells.length; index++) {
             if (Math.random() < spawnRate) gol.spawnCellbyIndex(index);
         }
+
+        return gol;
     }
 
-    static fromRLE(width: number, height: number, rle: string) {
+    static fromRLE(
+        width: number,
+        height: number,
+        rle: string,
+        isToroidal: boolean
+    ) {
         const size_and_pattern =
             /(?:^#.*\n)*^x\s?=\s?(\d+),\s?y\s?=\s?(\d+).*\n((?:.+\n?)+)/gm;
         const run_length_tags = /\d*[bo$]/gm;
 
-        const [_, dx, dy, pattern] = size_and_pattern.exec(rle)!;
+        const [, dx, dy, pattern] = size_and_pattern.exec(rle)!;
 
-        const gol = new GameOfLife(width, height);
+        const gol = new GameOfLife(width, height, isToroidal);
 
-        let y = Math.floor(height / 2) - Math.floor(parseInt(dy) / 2);
-        let x = Math.floor(width / 2) - Math.floor(parseInt(dx) / 2);
+        let y = Math.floor((height - parseInt(dy)) / 2);
+        let x = Math.floor((width - parseInt(dx)) / 2);
 
         const rules = pattern.match(run_length_tags)!;
         for (const rule of rules) {
@@ -140,7 +176,7 @@ export class GameOfLife {
                     for (let i = 0; i < c; i++) gol.spawnCellbyCoord(x++, y);
                     break;
                 case '$':
-                    x = Math.floor(width / 2) - Math.floor(parseInt(dx) / 2);
+                    x = Math.floor((width - parseInt(dx)) / 2);
                     y += c;
                     break;
             }

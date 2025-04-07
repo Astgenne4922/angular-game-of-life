@@ -1,15 +1,22 @@
 <game-of-life-bg
+    #gol
     [cellSize]="size"
     [fps]="fps"
     [showGrid]="grid"
     gridColor="#FFFFFF"
     [advanceGame]="run"
+    [preset]="pattern.value"
 />
 
-<span>FPS: {{ fps }} - SIZE: {{ size }}</span>
+<span>FPS: {{ gol.actualFps() }} - SIZE: {{ gol.actualCellSize() }}</span>
 <button (click)="run = !run">{{ !run ? "RUN" : "STOP" }}</button>
 <button (click)="grid = !grid">TOGGLE GRID</button>
 <button (click)="fpsUp()">FPS +</button>
 <button (click)="fpsDown()">FPS -</button>
 <button (click)="sizeUp()">SIZE +</button>
 <button (click)="sizeDown()">SIZE -</button>
+<select #pattern>
+    @for (p of patterns; track p) {
+    <option [value]="p">{{ p }}</option>
+    }
+</select>

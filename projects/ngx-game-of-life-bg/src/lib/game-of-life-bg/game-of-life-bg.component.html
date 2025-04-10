@@ -1,3 +1,11 @@
+@if(selectedPattern() !== 'random'){
+<span
+    class="pattern_name"
+    [style.z-index]="-997"
+    [style.background-color]="this.cellColor() + (this.showGrid() ? '' : '77')"
+    >{{ selectedPattern() }}</span
+>
+}
 <canvas class="gol_canvas" #game_of_life_grid [style.z-index]="-998"></canvas>
 <canvas class="gol_canvas" #game_of_life_board [style.z-index]="-999"></canvas>
 <canvas class="gol_canvas" #game_of_life_bg [style.z-index]="-1000"></canvas>

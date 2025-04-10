@@ -49,8 +49,7 @@ export class GameOfLife {
     public drawBoard(
         context: CanvasRenderingContext2D,
         cellSize: number,
-        cellColor: string,
-        bgColor: string
+        cellColor: string
     ) {
         context.clearRect(0, 0, this.width * cellSize, this.height * cellSize);
 
@@ -60,7 +59,7 @@ export class GameOfLife {
             const { x, y } = this.translate1dto2d(index);
             if (cellSize >= 10) {
                 context.beginPath();
-                context.fillStyle = bgColor;
+                context.fillStyle = '#000000FF';
                 context.rect(x * cellSize, y * cellSize, cellSize, cellSize);
                 context.stroke();
             }

@@ -1,3 +1,5 @@
+import { PATTERNS } from './game-of-life-bg.presets';
+
 export const COLORS = {
     CELL: '#FFFFFF',
     GRID: '#000000',
@@ -15,3 +17,5 @@ export const IS_TOROIDAL = true;
 export const SPAWN_RATE = 0.3;
 
 export const IS_EVOLVING = true;
+
+export const PRESETS = Object.keys(PATTERNS);

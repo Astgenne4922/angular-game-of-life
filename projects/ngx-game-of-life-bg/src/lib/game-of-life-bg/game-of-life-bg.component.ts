@@ -6,6 +6,7 @@ import {
     ElementRef,
     HostListener,
     input,
+    model,
     ViewChild,
 } from '@angular/core';
 import {
@@ -18,7 +19,7 @@ import {
     SPAWN_RATE,
 } from './game-of-life-bg.constants';
 import { GameOfLife } from './game-of-life-bg.model';
-import { PRESETS, PATTERNS } from './game-of-life-bg.presets';
+import { PATTERNS } from './game-of-life-bg.presets';
 
 /**
  * Acts as the page background displaying Conway's Game of Life on a toroidal board.
@@ -67,11 +68,10 @@ import { PRESETS, PATTERNS } from './game-of-life-bg.presets';
  *
  * The initial board state can be controlled by the `preset` attribute. Setting this attribute to a valid preset name (see {@link PRESETS})
  * specifies automatically a value for `cellSize` and `fps` and creates the initial board state from a determined pattern.
- * Every change to `cellSize` and `fps` while `preset` as a valid value is ignored.
- * If `preset` is invalid the board is created with random live cells and the values of `cellSize` and `fps` are used.
+ * If `preset` is invalid the board is created with random live cells .
  * By default `preset` is empty.
  * ```html
- * <game-of-life-bg preset="kok_galaxy"/>
+ * <game-of-life-bg preset="lightspeedoscillator3"/>
  * ```
  *
  * When creating a random board the percentage of live cell can by selected using the `spawnRate` attribute. The default value is 0.3
@@ -109,12 +109,12 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     backgroundColor = input(COLORS.BACKGROUND);
 
     /** Cell size in pixels. Default size is 10px */
-    cellSize = input(CELL_SIZE);
+    cellSize = model(CELL_SIZE);
     /** Cell color. Default color is #ffffff */
     cellColor = input(COLORS.CELL);
 
     /** Frames drawn per second. Every frame the game advances and the canvas is redrawn. Default is 10 */
-    fps = input(FPS);
+    fps = model(FPS);
 
     /** Determines if the board should be treated as a toroidal surface. Default is true */
     isToroidal = input(IS_TOROIDAL);
@@ -125,14 +125,13 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     /** If true the game state is advanced each frame. True by default */
     advanceGame = input(IS_EVOLVING);
 
-    /** String to select a preset pattern. If the pattern name is valid (see {@link PRESETS}), the values of `cellSize` and `fps` are ignored
-     * and the preset values are used instead. If the value is empty or isn't a valid preset name
-     * the board is constructed at random and `cellSize` and `fps` are no longer ignored */
+    /** String to select a preset pattern. If the pattern name is valid (see {@link PRESETS}), `cellSize` and `fps` are
+     * overridden with the preset values. If the value is empty or isn't a valid preset name the board is constructed at random
+     */
     preset = input<string>('');
-    actualCellSize = computed(
-        () => PATTERNS[this.preset()]?.cellSize ?? this.cellSize()
+    selectedPattern = computed(() =>
+        Object.hasOwn(PATTERNS, this.preset()) ? this.preset() : 'random'
     );
-    actualFps = computed(() => PATTERNS[this.preset()]?.fps ?? this.fps());
 
     private board!: GameOfLife;
 
@@ -145,9 +144,16 @@ export class GameOfLifeBgComponent implements AfterViewInit {
 
         effect(() => {
             this.resetBoard(
-                Math.ceil(this.width() / this.actualCellSize()),
-                Math.ceil(this.height() / this.actualCellSize())
+                Math.ceil(this.width() / this.cellSize()),
+                Math.ceil(this.height() / this.cellSize())
             );
+        });
+
+        effect(() => {
+            if (this.selectedPattern() !== 'random') {
+                this.cellSize.set(PATTERNS[this.preset()].cellSize);
+                this.fps.set(PATTERNS[this.preset()].fps);
+            }
         });
     }
 
@@ -198,7 +204,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         const now = window.performance.now();
         const passed = now - this.then;
 
-        const msPF = 1000 / this.actualFps();
+        const msPF = 1000 / this.fps();
         if (passed < msPF) return;
 
         const excessTime = passed % msPF;
@@ -207,9 +213,8 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         if (this.advanceGame()) this.board.next();
         this.board.drawBoard(
             this.boardContext,
-            this.actualCellSize(),
-            this.cellColor(),
-            this.backgroundColor()
+            this.cellSize(),
+            this.cellColor()
         );
     }
 
@@ -217,7 +222,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     private drawGrid() {
         const width = this.width();
         const height = this.height();
-        const cellSize = this.actualCellSize();
+        const cellSize = this.cellSize();
 
         this.gridContext.clearRect(0, 0, width, height);
 
@@ -235,18 +240,21 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     }
 
     private resetBoard(width = this.boardWidth(), height = this.boardHeight()) {
-        if (PRESETS.includes(this.preset()))
+        const pattern = this.selectedPattern();
+
+        if (pattern === 'random')
+            this.board = GameOfLife.random(width, height, {
+                spawnRate: this.spawnRate(),
+                isToroidal: this.isToroidal(),
+            });
+        else {
             this.board = GameOfLife.fromRLE(
                 width,
                 height,
                 PATTERNS[this.preset()].rle,
                 PATTERNS[this.preset()].isToroidal
             );
-        else
-            this.board = GameOfLife.random(width, height, {
-                spawnRate: this.spawnRate(),
-                isToroidal: this.isToroidal(),
-            });
+        }
     }
 
     /** Canvas width updated on resize */
@@ -256,7 +264,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     /** Horizontal size of the board */
     private boardWidth() {
         // return Math.ceil(this.width() / this.cellSize());
-        return Math.ceil(this.width() / this.actualCellSize());
+        return Math.ceil(this.width() / this.cellSize());
     }
 
     /** Canvas height updated on resize */
@@ -265,6 +273,6 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     }
     /** Vertical size of the board */
     private boardHeight() {
-        return Math.ceil(this.height() / this.actualCellSize());
+        return Math.ceil(this.height() / this.cellSize());
     }
 }

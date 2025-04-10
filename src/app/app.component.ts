@@ -12,7 +12,7 @@ export class AppComponent {
     fps = 60;
     size = 5;
     run = true;
-    patterns = PATTERN_NAMES;
+    pattern = PATTERN_NAMES[Math.floor(Math.random() * PATTERN_NAMES.length)];
 
     fpsUp() {
         this.fps += 5;
@@ -30,5 +30,10 @@ export class AppComponent {
     sizeDown() {
         this.size -= 5;
         if (this.size < 5) this.size = 5;
+    }
+
+    changePattern() {
+        this.pattern =
+            PATTERN_NAMES[Math.floor(Math.random() * PATTERN_NAMES.length)];
     }
 }

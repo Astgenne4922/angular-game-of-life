@@ -46,13 +46,11 @@ export class GameOfLife {
     /** Draws the live cells on a html canvas context as squares with side of length `cellSize` using the specified `cellColor`.
      * The size of the canvas is calculated with the size of the cells array and `cellSize`
      */
-    public drawBoard(
+    public draw(
         context: CanvasRenderingContext2D,
         cellSize: number,
         cellColor: string
     ) {
-        context.clearRect(0, 0, this.width * cellSize, this.height * cellSize);
-
         for (let index = 0; index < this.cells.length; index++) {
             if (!(this.cells[index] & 1)) continue;
 

@@ -98,6 +98,8 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     private boardContext!: CanvasRenderingContext2D;
     private bgContext!: CanvasRenderingContext2D;
 
+    private board!: GameOfLife;
+
     private then!: number;
 
     /** When true shows a grid on the board. Default is set to false */
@@ -132,8 +134,6 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     selectedPattern = computed(() =>
         Object.hasOwn(PATTERNS, this.preset()) ? this.preset() : 'random'
     );
-
-    private board!: GameOfLife;
 
     constructor() {
         effect(() => {
@@ -170,11 +170,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         this.update();
     }
 
-    /**
-     * Adjusts the canvases size on window resize,
-     * redraws the background and the grid and
-     * resets the game with a fresh board
-     */
+    /** Adjusts the canvases size on window resize, redraws the background and the grid and resets the game with a fresh board */
     @HostListener('window:resize')
     private onResize() {
         const width = this.width();
@@ -198,6 +194,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     }
 
     /** Draws and updates the simulation on the board canvas */
+    // TODO togliere then dalle proprieta del componente
     private update() {
         window.requestAnimationFrame(() => this.update());
 
@@ -211,11 +208,8 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         this.then = now - excessTime;
 
         if (this.advanceGame()) this.board.next();
-        this.board.drawBoard(
-            this.boardContext,
-            this.cellSize(),
-            this.cellColor()
-        );
+        this.boardContext.clearRect(0, 0, this.width(), this.height());
+        this.board.draw(this.boardContext, this.cellSize(), this.cellColor());
     }
 
     /** Draws a grid on the designated canvas */
@@ -247,14 +241,13 @@ export class GameOfLifeBgComponent implements AfterViewInit {
                 spawnRate: this.spawnRate(),
                 isToroidal: this.isToroidal(),
             });
-        else {
+        else
             this.board = GameOfLife.fromRLE(
                 width,
                 height,
                 PATTERNS[this.preset()].rle,
                 PATTERNS[this.preset()].isToroidal
             );
-        }
     }
 
     /** Canvas width updated on resize */
@@ -263,7 +256,6 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     }
     /** Horizontal size of the board */
     private boardWidth() {
-        // return Math.ceil(this.width() / this.cellSize());
         return Math.ceil(this.width() / this.cellSize());
     }
 

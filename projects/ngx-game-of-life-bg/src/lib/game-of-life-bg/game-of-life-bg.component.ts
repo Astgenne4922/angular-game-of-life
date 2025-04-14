@@ -1,13 +1,12 @@
 import {
-    AfterViewInit,
     Component,
     computed,
     effect,
+    viewChild,
     ElementRef,
-    HostListener,
     input,
     model,
-    ViewChild,
+    AfterViewInit,
 } from '@angular/core';
 import {
     CELL_SIZE,
@@ -37,7 +36,7 @@ import { PATTERNS } from './game-of-life-bg.presets';
  * <game-of-life-bg
  *      backgroundColor="#001a44"
  *      gridColor="#ffffff"
- *      cellColor="ffffff"
+ *      cellColor="#ffffff"
  * />
  * ```
  *
@@ -85,22 +84,28 @@ import { PATTERNS } from './game-of-life-bg.presets';
     selector: 'game-of-life-bg',
     templateUrl: './game-of-life-bg.component.html',
     styleUrls: ['./game-of-life-bg.component.css'],
+    host: { '(window:resize)': 'onResize()' },
 })
 export class GameOfLifeBgComponent implements AfterViewInit {
-    @ViewChild('game_of_life_grid')
-    private gridCanvas!: ElementRef<HTMLCanvasElement>;
-    @ViewChild('game_of_life_board')
-    private boardCanvas!: ElementRef<HTMLCanvasElement>;
-    @ViewChild('game_of_life_bg')
-    private bgCanvas!: ElementRef<HTMLCanvasElement>;
+    private gridCanvas =
+        viewChild.required<ElementRef<HTMLCanvasElement>>('game_of_life_grid');
+    private gridContext = computed(
+        () => this.gridCanvas().nativeElement.getContext('2d')!
+    );
 
-    private gridContext!: CanvasRenderingContext2D;
-    private boardContext!: CanvasRenderingContext2D;
-    private bgContext!: CanvasRenderingContext2D;
+    private boardCanvas =
+        viewChild.required<ElementRef<HTMLCanvasElement>>('game_of_life_board');
+    private boardContext = computed(
+        () => this.boardCanvas().nativeElement.getContext('2d')!
+    );
+
+    private bgCanvas =
+        viewChild.required<ElementRef<HTMLCanvasElement>>('game_of_life_bg');
+    private bgContext = computed(
+        () => this.bgCanvas().nativeElement.getContext('2d', { alpha: false })!
+    );
 
     private board!: GameOfLife;
-
-    private then!: number;
 
     /** When true shows a grid on the board. Default is set to false */
     showGrid = input(SHOW_GRID);
@@ -130,111 +135,118 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     /** String to select a preset pattern. If the pattern name is valid (see {@link PRESETS}), `cellSize` and `fps` are
      * overridden with the preset values. If the value is empty or isn't a valid preset name the board is constructed at random
      */
-    preset = input<string>('');
-    selectedPattern = computed(() =>
-        Object.hasOwn(PATTERNS, this.preset()) ? this.preset() : 'random'
-    );
+    preset = input('', {
+        transform: (value: string) =>
+            Object.hasOwn(PATTERNS, value) ? value : 'random',
+    });
 
     constructor() {
+        /** Triggers when `showGrid`, `gridColor` or `cellSize()` change */
         effect(() => {
-            if (this.showGrid() && this.gridContext) this.drawGrid();
-            else if (this.gridContext)
-                this.gridContext.clearRect(0, 0, this.width(), this.height());
+            if (this.showGrid()) this.drawGrid();
+            else
+                this.gridContext().clearRect(0, 0, this.width(), this.height());
         });
 
+        /** Triggers when `preset`, `cellSize`, `spawnRate` (if preset is random) or `isToroidal` (if preset is random) change */
         effect(() => {
-            this.resetBoard(
-                Math.ceil(this.width() / this.cellSize()),
-                Math.ceil(this.height() / this.cellSize())
-            );
+            this.resetBoard();
         });
 
+        /** Triggers when `preset` changes */
         effect(() => {
-            if (this.selectedPattern() !== 'random') {
-                this.cellSize.set(PATTERNS[this.preset()].cellSize);
-                this.fps.set(PATTERNS[this.preset()].fps);
+            const preset = this.preset();
+            if (preset !== 'random') {
+                this.cellSize.set(PATTERNS[preset].cellSize);
+                this.fps.set(PATTERNS[preset].fps);
             }
+        });
+
+        /** Triggers when `backgroundColor` changes */
+        effect(() => {
+            this.bgContext().fillStyle = this.backgroundColor();
+            this.bgContext().fillRect(0, 0, this.width(), this.height());
         });
     }
 
     ngAfterViewInit() {
-        this.gridContext = this.gridCanvas.nativeElement.getContext('2d')!;
-        this.boardContext = this.boardCanvas.nativeElement.getContext('2d')!;
-        this.bgContext = this.bgCanvas.nativeElement.getContext('2d', {
-            alpha: false,
-        })!;
-
         this.onResize();
-
-        this.then = window.performance.now();
         this.update();
     }
 
-    /** Adjusts the canvases size on window resize, redraws the background and the grid and resets the game with a fresh board */
-    @HostListener('window:resize')
+    /** Adjusts canvas size on window resize, redraws the background and the grid and resets the game with a fresh board */
     private onResize() {
         const width = this.width();
         const height = this.height();
 
-        this.bgCanvas.nativeElement.width = width;
-        this.bgCanvas.nativeElement.height = height;
+        this.bgCanvas().nativeElement.width = width;
+        this.bgCanvas().nativeElement.height = height;
 
-        this.boardCanvas.nativeElement.width = width;
-        this.boardCanvas.nativeElement.height = height;
+        this.boardCanvas().nativeElement.width = width;
+        this.boardCanvas().nativeElement.height = height;
 
-        this.gridCanvas.nativeElement.width = width;
-        this.gridCanvas.nativeElement.height = height;
+        this.gridCanvas().nativeElement.width = width;
+        this.gridCanvas().nativeElement.height = height;
 
-        this.bgContext.fillStyle = this.backgroundColor();
-        this.bgContext.fillRect(0, 0, width, height);
+        this.bgContext().fillStyle = this.backgroundColor();
+        this.bgContext().fillRect(0, 0, width, height);
 
         this.resetBoard();
-
-        if (this.showGrid()) this.drawGrid();
     }
 
     /** Draws and updates the simulation on the board canvas */
-    // TODO togliere then dalle proprieta del componente
     private update() {
-        window.requestAnimationFrame(() => this.update());
+        let then = window.performance.now();
 
-        const now = window.performance.now();
-        const passed = now - this.then;
+        const step = (timestamp: DOMHighResTimeStamp) => {
+            window.requestAnimationFrame(step);
 
-        const msPF = 1000 / this.fps();
-        if (passed < msPF) return;
+            const passed = timestamp - then;
 
-        const excessTime = passed % msPF;
-        this.then = now - excessTime;
+            const msPF = 1000 / this.fps();
+            if (passed < msPF) return;
 
-        if (this.advanceGame()) this.board.next();
-        this.boardContext.clearRect(0, 0, this.width(), this.height());
-        this.board.draw(this.boardContext, this.cellSize(), this.cellColor());
+            then = timestamp - (passed % msPF);
+
+            if (this.advanceGame()) this.board.next();
+
+            this.boardContext().clearRect(0, 0, this.width(), this.height());
+            this.board.draw(
+                this.boardContext(),
+                this.cellSize(),
+                this.cellColor()
+            );
+        };
+        window.requestAnimationFrame(step);
     }
 
-    /** Draws a grid on the designated canvas */
+    /** Draws the grid on the canvas */
     private drawGrid() {
         const width = this.width();
         const height = this.height();
         const cellSize = this.cellSize();
+        const gridContext = this.gridContext();
 
-        this.gridContext.clearRect(0, 0, width, height);
+        gridContext.clearRect(0, 0, width, height);
 
-        this.gridContext.beginPath();
-        this.gridContext.strokeStyle = this.gridColor();
+        gridContext.beginPath();
+        gridContext.strokeStyle = this.gridColor();
         for (let x = 0; x < width; x += cellSize) {
-            this.gridContext.moveTo(x, 0);
-            this.gridContext.lineTo(x, height);
+            gridContext.moveTo(x, 0);
+            gridContext.lineTo(x, height);
         }
         for (let y = 0; y < height; y += cellSize) {
-            this.gridContext.moveTo(0, y);
-            this.gridContext.lineTo(width, y);
+            gridContext.moveTo(0, y);
+            gridContext.lineTo(width, y);
         }
-        this.gridContext.stroke();
+        gridContext.stroke();
     }
 
-    private resetBoard(width = this.boardWidth(), height = this.boardHeight()) {
-        const pattern = this.selectedPattern();
+    /** Creates a new board from a preset or with random live cells */
+    private resetBoard() {
+        const width = Math.ceil(this.width() / this.cellSize());
+        const height = Math.ceil(this.height() / this.cellSize());
+        const pattern = this.preset();
 
         if (pattern === 'random')
             this.board = GameOfLife.random(width, height, {
@@ -245,8 +257,8 @@ export class GameOfLifeBgComponent implements AfterViewInit {
             this.board = GameOfLife.fromRLE(
                 width,
                 height,
-                PATTERNS[this.preset()].rle,
-                PATTERNS[this.preset()].isToroidal
+                PATTERNS[pattern].rle,
+                PATTERNS[pattern].isToroidal
             );
     }
 
@@ -254,17 +266,9 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     private width() {
         return window.innerWidth;
     }
-    /** Horizontal size of the board */
-    private boardWidth() {
-        return Math.ceil(this.width() / this.cellSize());
-    }
 
     /** Canvas height updated on resize */
     private height() {
         return window.innerHeight;
-    }
-    /** Vertical size of the board */
-    private boardHeight() {
-        return Math.ceil(this.height() / this.cellSize());
     }
 }

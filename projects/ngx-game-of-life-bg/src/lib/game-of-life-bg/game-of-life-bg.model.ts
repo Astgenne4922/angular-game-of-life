@@ -122,7 +122,7 @@ export class GameOfLife {
         return { x: Math.floor(index / this.height), y: index % this.height };
     }
 
-    /** Converts 2-dimensional cooridnate to an index */
+    /** Converts 2-dimensional coordinates to an index */
     public translate2dto1d(x: number, y: number): number {
         return (
             (((x % this.width) + this.width) % this.width) * this.height +
@@ -130,6 +130,7 @@ export class GameOfLife {
         );
     }
 
+    /** Creates a new board with a certain percentage of random live cells */
     static random(
         width: number,
         height: number,
@@ -144,6 +145,7 @@ export class GameOfLife {
         return gol;
     }
 
+    /** Creates a new board from a standard rle (Run Length Encoding) pattern */
     static fromRLE(
         width: number,
         height: number,

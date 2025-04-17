@@ -6,8 +6,7 @@
         "start": "ng serve",
         "build": "ng build",
         "watch": "ng build --watch --configuration development",
-        "test": "ng test",
-        "prova": "cd dist/ngx-game-of-life-bg && npm publish"
+        "test": "ng test"
     },
     "private": true,
     "dependencies": {

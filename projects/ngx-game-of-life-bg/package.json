@@ -1,6 +1,18 @@
 {
     "name": "ngx-game-of-life-bg",
     "version": "1.0.0",
+    "description": "Angular 19+ background component playing The Game of Life",
+    "license": "MIT",
+    "private": false,
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Astgenne4922/angular-game-of-life"
+    },
+    "keywords": [
+        "angular",
+        "game of life",
+        "ng"
+    ],
     "peerDependencies": {
         "@angular/common": "^19.2.0",
         "@angular/core": "^19.2.0"

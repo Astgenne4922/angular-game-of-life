@@ -3,8 +3,5 @@
     "dest": "../../dist/ngx-game-of-life-bg",
     "lib": {
         "entryFile": "src/public-api.ts"
-    },
-    "assets": [
-        "../../README.md"
-    ]
+    }
 }

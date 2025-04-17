@@ -1,59 +1,195 @@
-# AngularGameOfLife
+<h1 align="center">Angular Game of Life Background</h1>
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.4.
+> Background component playing Conway's Game of Life for Angular 19+
 
-## Development server
+### Demo page
 
-To start a local development server, run:
+[https://astgenne4922.github.io/angular-game-of-life/](https://astgenne4922.github.io/angular-game-of-life/)
 
-```bash
-ng serve
+## Overview
+
+-   [Install](#install)
+-   [Usage](#usage)
+-   [Options](#options)
+
+## Install
+
+### Angular >= 19
+
+```
+npm install ngx-game-of-life-bg
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Usage
 
-## Code scaffolding
+Add `GameOfLifeBgComponent` to your `imports`
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+```typescript
+import { Component } from "@angular/core";
+import { GameOfLifeBgComponent } from "ngx-game-of-life-bg";
 
-```bash
-ng generate component component-name
+@Component({
+    selector: "app-root",
+    imports: [GameOfLifeBgComponent],
+    templateUrl: "./app.component.html",
+    styleUrl: "./app.component.css",
+})
+export class AppComponent {}
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+And then use it in your template
 
-```bash
-ng generate --help
+```html
+<ngx-game-of-life-bg cellSize="5" fps="60" showGrid="true" gridColor="#FFFFFF" advanceGame="true" preset="lightspeedoscillator3" />
 ```
 
-## Building
+## Options
 
-To build the project run:
+-   [[showGrid]](#showGrid)
+-   [[gridColor]](#gridColor)
+-   [[backgroundColor]](#backgroundColor)
+-   [[cellSize]](#cellSize)
+-   [[cellColor]](#cellColor)
+-   [[fps]](#fps)
+-   [[isToroidal]](#isToroidal)
+-   [[spawnRate]](#spawnRate)
+-   [[advanceGame]](#advanceGame)
+-   [[preset]](#preset)
 
-```bash
-ng build
+#### [showGrid]
+
+| Property   | Type      | Required  | Default |
+| ---------- | --------- | --------- | ------- |
+| [showGrid] | _boolean_ | _Optonal_ | `false` |
+
+If `true` a grid is displayed over the board.
+
+```html
+<ngx-game-of-life-bg showGrid="true" />
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+#### [gridColor]
 
-## Running unit tests
+| Property    | Type     | Required  | Default   |
+| ----------- | -------- | --------- | --------- |
+| [gridColor] | _string_ | _Optonal_ | `#000000` |
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+The color used for the grid when displayed.
+Accepts only HEX color formats (`#ffffff`).
 
-```bash
-ng test
+```html
+<ngx-game-of-life-bg gridColor="#ffffff" />
 ```
 
-## Running end-to-end tests
+#### [backgroundColor]
 
-For end-to-end (e2e) testing, run:
+| Property          | Type     | Required  | Default   |
+| ----------------- | -------- | --------- | --------- |
+| [backgroundColor] | _string_ | _Optonal_ | `#001a44` |
 
-```bash
-ng e2e
+The color for the background of the board.
+Accepts only HEX color formats (`#ffffff`).
+
+```html
+<ngx-game-of-life-bg backgroundColor="#001a44" />
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+#### [cellSize]
 
-## Additional Resources
+| Property   | Type     | Required  | Default |
+| ---------- | -------- | --------- | ------- |
+| [cellSize] | _number_ | _Optonal_ | `5`     |
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The size in pixels of the cells displayed.
+Changing this value while running causes the game state to be reset.
+
+```html
+<ngx-game-of-life-bg cellSize="20" />
+```
+
+#### [cellColor]
+
+| Property    | Type     | Required  | Default   |
+| ----------- | -------- | --------- | --------- |
+| [cellColor] | _string_ | _Optonal_ | `#ffffff` |
+
+The color used for live cells.
+Accepts only HEX color formats (`#ffffff`).
+
+```html
+<ngx-game-of-life-bg cellColor="#ffffff" />
+```
+
+#### [fps]
+
+| Property | Type     | Required  | Default |
+| -------- | -------- | --------- | ------- |
+| [fps]    | _number_ | _Optonal_ | `60`    |
+
+The framerate of the simulation. Every frame the game is advanced by 1 step and the board is redrawn.
+
+```html
+<ngx-game-of-life-bg fps="20" />
+```
+
+#### [isToroidal]
+
+| Property     | Type      | Required  | Default |
+| ------------ | --------- | --------- | ------- |
+| [isToroidal] | _boolean_ | _Optonal_ | `true`  |
+
+With `true` the board is treated as if opposing sides are connected, with `false` the board is treated as a closed grid and every cell outside the borders is considered dead.
+Changing this value while running causes the game state to be reset.
+
+```html
+<ngx-game-of-life-bg isToroidal="true" />
+```
+
+#### [spawnRate]
+
+| Property    | Type     | Required  | Default |
+| ----------- | -------- | --------- | ------- |
+| [spawnRate] | _number_ | _Optonal_ | `0.3`   |
+
+Controls the percentage of live cells when creating a random board. The percentage is represented with values between `0` and `1`.
+Changing this value while running causes the game state to be reset.
+
+```html
+<ngx-game-of-life-bg spawnRate="0.3" />
+```
+
+#### [advanceGame]
+
+| Property      | Type      | Required  | Default |
+| ------------- | --------- | --------- | ------- |
+| [advanceGame] | _boolean_ | _Optonal_ | `true`  |
+
+If `true` the game state is advanced by one step every frame.
+
+```html
+<ngx-game-of-life-bg advanceGame="true" />
+```
+
+#### [preset]
+
+| Property | Type     | Required  | Default |
+| -------- | -------- | --------- | ------- |
+| [preset] | _string_ | _Optonal_ | `''`    |
+
+Setting this attribute to a valid preset name specifies automatically a value for `cellSize`, `fps`, and `isToroidal` if they haven't been already set and creates the initial board state from a determined pattern.
+If `preset` is invalid the board is created with random live cells.
+Changing this value while running causes the game state to be reset.
+
+A list of every valid pattern name can be found in `PATTERN_NAMES`. Simply import it in your component file.
+
+```typescript
+import { PATTERN_NAMES } from "ngx-game-of-life-bg";
+```
+
+```html
+<ngx-game-of-life-bg preset="lightspeedoscillator3" />
+```
+
+## License
+
+ngx-game-of-life-bg is [MIT licensed](./LICENSE).

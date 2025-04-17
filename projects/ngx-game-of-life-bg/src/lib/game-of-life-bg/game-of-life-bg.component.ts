@@ -5,7 +5,6 @@ import {
     viewChild,
     ElementRef,
     input,
-    model,
     AfterViewInit,
 } from '@angular/core';
 import {
@@ -66,7 +65,7 @@ import { PATTERNS } from './game-of-life-bg.presets';
  * ```
  *
  * The initial board state can be controlled by the `preset` attribute. Setting this attribute to a valid preset name (see {@link PRESETS})
- * specifies automatically a value for `cellSize` and `fps` and creates the initial board state from a determined pattern.
+ * specifies automatically a value for `cellSize` and `fps` if it's not already present and creates the initial board state from a determined pattern.
  * If `preset` is invalid the board is created with random live cells .
  * By default `preset` is empty.
  * ```html
@@ -115,16 +114,38 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     /** Background color. Default color is #001a44 */
     backgroundColor = input(COLORS.BACKGROUND);
 
-    /** Cell size in pixels. Default size is 10px */
-    cellSize = model(CELL_SIZE);
+    /** Cell size in pixels. Default size is 5px */
+    userCellSize = input<number>(undefined, { alias: 'cellSize' });
+    cellSize = computed<number>(() => {
+        if (this.userCellSize() !== undefined) return this.userCellSize()!;
+        else {
+            if (this.preset() !== 'random')
+                return PATTERNS[this.preset()].cellSize;
+            else return CELL_SIZE;
+        }
+    });
     /** Cell color. Default color is #ffffff */
     cellColor = input(COLORS.CELL);
 
     /** Frames drawn per second. Every frame the game advances and the canvas is redrawn. Default is 10 */
-    fps = model(FPS);
-
+    userFps = input<number>(undefined, { alias: 'fps' });
+    fps = computed<number>(() => {
+        if (this.userFps() !== undefined) return this.userFps()!;
+        else {
+            if (this.preset() !== 'random') return PATTERNS[this.preset()].fps;
+            else return FPS;
+        }
+    });
     /** Determines if the board should be treated as a toroidal surface. Default is true */
-    isToroidal = model(IS_TOROIDAL);
+    userIsToroidal = input<boolean>(undefined, { alias: 'isToroidal' });
+    isToroidal = computed(() => {
+        if (this.userIsToroidal() !== undefined) return this.userIsToroidal()!;
+        else {
+            if (this.preset() !== 'random')
+                return PATTERNS[this.preset()].isToroidal;
+            else return IS_TOROIDAL;
+        }
+    });
 
     /** Percentage of live cells created when setting up a random board. Default is 0.3 */
     spawnRate = input(SPAWN_RATE);
@@ -151,16 +172,6 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         /** Triggers when `preset`, `cellSize`, `spawnRate` (if preset is random) or `isToroidal` change */
         effect(() => {
             this.resetBoard();
-        });
-
-        /** Triggers when `preset` changes */
-        effect(() => {
-            const preset = this.preset();
-            if (preset !== 'random') {
-                this.cellSize.set(PATTERNS[preset].cellSize);
-                this.fps.set(PATTERNS[preset].fps);
-                this.isToroidal.set(PATTERNS[preset].isToroidal);
-            }
         });
 
         /** Triggers when `backgroundColor` changes */

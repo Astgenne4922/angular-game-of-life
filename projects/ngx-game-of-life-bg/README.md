@@ -40,7 +40,7 @@ export class AppComponent {}
 And then use it in your template
 
 ```html
-<ngx-game-of-life-bg [(cellSize)]="size" [(fps)]="fps" [showGrid]="grid" gridColor="#FFFFFF" [advanceGame]="run" [preset]="pattern" />
+<ngx-game-of-life-bg cellSize="5" fps="60" showGrid="true" gridColor="#FFFFFF" advanceGame="true" preset="lightspeedoscillator3" />
 ```
 
 ## Options
@@ -48,22 +48,21 @@ And then use it in your template
 -   [[showGrid]](#showGrid)
 -   [[gridColor]](#gridColor)
 -   [[backgroundColor]](#backgroundColor)
--   [[(cellSize)]](#cellSize)
+-   [[cellSize]](#cellSize)
 -   [[cellColor]](#cellColor)
--   [[(fps)]](#fps)
--   [[(isToroidal)]](#isToroidal)
+-   [[fps]](#fps)
+-   [[isToroidal]](#isToroidal)
 -   [[spawnRate]](#spawnRate)
 -   [[advanceGame]](#advanceGame)
 -   [[preset]](#preset)
 
 #### [showGrid]
 
-| Property   | Type      | Required |
-| ---------- | --------- | -------- |
-| [showGrid] | _boolean_ | Optional |
+| Property   | Type      | Required  | Default |
+| ---------- | --------- | --------- | ------- |
+| [showGrid] | _boolean_ | _Optonal_ | `false` |
 
 If `true` a grid is displayed over the board.
-The default value is `false`.
 
 ```html
 <ngx-game-of-life-bg showGrid="true" />
@@ -71,13 +70,12 @@ The default value is `false`.
 
 #### [gridColor]
 
-| Property    | Type     | Required |
-| ----------- | -------- | -------- |
-| [gridColor] | _string_ | Optional |
+| Property    | Type     | Required  | Default   |
+| ----------- | -------- | --------- | --------- |
+| [gridColor] | _string_ | _Optonal_ | `#000000` |
 
 The color used for the grid when displayed.
-Accepts only HEX color formats (`'#ffffff'`).
-The default value is `'#000000'`.
+Accepts only HEX color formats (`#ffffff`).
 
 ```html
 <ngx-game-of-life-bg gridColor="#ffffff" />
@@ -85,13 +83,12 @@ The default value is `'#000000'`.
 
 #### [backgroundColor]
 
-| Property          | Type     | Required |
-| ----------------- | -------- | -------- |
-| [backgroundColor] | _string_ | Optional |
+| Property          | Type     | Required  | Default   |
+| ----------------- | -------- | --------- | --------- |
+| [backgroundColor] | _string_ | _Optonal_ | `#001a44` |
 
 The color for the background of the board.
-Accepts only HEX color formats (`'#ffffff'`).
-The default value is `'#001a44'`.
+Accepts only HEX color formats (`#ffffff`).
 
 ```html
 <ngx-game-of-life-bg backgroundColor="#001a44" />
@@ -99,33 +96,25 @@ The default value is `'#001a44'`.
 
 #### [cellSize]
 
-| Property                   | Type     | Required |
-| -------------------------- | -------- | -------- |
-| [cellSize] or [(cellSize)] | _number_ | Optional |
+| Property   | Type     | Required  | Default |
+| ---------- | -------- | --------- | ------- |
+| [cellSize] | _number_ | _Optonal_ | `5`     |
 
 The size in pixels of the cells displayed.
 Changing this value while running causes the game state to be reset.
-The default value is `5`.
-
-Supports two-way binding (see [[preset]](#preset))
 
 ```html
 <ngx-game-of-life-bg cellSize="20" />
 ```
 
-```html
-<ngx-game-of-life-bg [(cellSize)]="size" />
-```
-
 #### [cellColor]
 
-| Property    | Type     | Required |
-| ----------- | -------- | -------- |
-| [cellColor] | _string_ | Optional |
+| Property    | Type     | Required  | Default   |
+| ----------- | -------- | --------- | --------- |
+| [cellColor] | _string_ | _Optonal_ | `#ffffff` |
 
 The color used for live cells.
-Accepts only HEX color formats (`'#ffffff'`).
-The default value is `'#ffffff'`.
+Accepts only HEX color formats (`#ffffff`).
 
 ```html
 <ngx-game-of-life-bg cellColor="#ffffff" />
@@ -133,33 +122,24 @@ The default value is `'#ffffff'`.
 
 #### [fps]
 
-| Property         | Type     | Required |
-| ---------------- | -------- | -------- |
-| [fps] or [(fps)] | _number_ | Optional |
+| Property | Type     | Required  | Default |
+| -------- | -------- | --------- | ------- |
+| [fps]    | _number_ | _Optonal_ | `60`    |
 
 The framerate of the simulation. Every frame the game is advanced by 1 step and the board is redrawn.
-The default value is `60`.
-
-Supports two-way binding (see [[preset]](#preset))
 
 ```html
-<ngx-game-of-life-bg cellSize="20" />
-```
-
-```html
-<ngx-game-of-life-bg [(cellSize)]="size" />
+<ngx-game-of-life-bg fps="20" />
 ```
 
 #### [isToroidal]
 
-| Property                       | Type      | Required |
-| ------------------------------ | --------- | -------- |
-| [isToroidal] or [(isToroidal)] | _boolean_ | Optional |
+| Property     | Type      | Required  | Default |
+| ------------ | --------- | --------- | ------- |
+| [isToroidal] | _boolean_ | _Optonal_ | `true`  |
 
 With `true` the board is treated as if opposing sides are connected, with `false` the board is treated as a closed grid and every cell outside the borders is considered dead.
-The default value is `true`.
-
-Supports two-way binding (see [[preset]](#preset))
+Changing this value while running causes the game state to be reset.
 
 ```html
 <ngx-game-of-life-bg isToroidal="true" />
@@ -167,12 +147,12 @@ Supports two-way binding (see [[preset]](#preset))
 
 #### [spawnRate]
 
-| Property    | Type     | Required |
-| ----------- | -------- | -------- |
-| [spawnRate] | _number_ | Optional |
+| Property    | Type     | Required  | Default |
+| ----------- | -------- | --------- | ------- |
+| [spawnRate] | _number_ | _Optonal_ | `0.3`   |
 
 Controls the percentage of live cells when creating a random board. The percentage is represented with values between `0` and `1`.
-The default value is `0.3`.
+Changing this value while running causes the game state to be reset.
 
 ```html
 <ngx-game-of-life-bg spawnRate="0.3" />
@@ -180,12 +160,11 @@ The default value is `0.3`.
 
 #### [advanceGame]
 
-| Property      | Type      | Required |
-| ------------- | --------- | -------- |
-| [advanceGame] | _boolean_ | Optional |
+| Property      | Type      | Required  | Default |
+| ------------- | --------- | --------- | ------- |
+| [advanceGame] | _boolean_ | _Optonal_ | `true`  |
 
 If `true` the game state is advanced by one step every frame.
-The default value is `true`.
 
 ```html
 <ngx-game-of-life-bg advanceGame="true" />
@@ -193,13 +172,13 @@ The default value is `true`.
 
 #### [preset]
 
-| Property | Type     | Required |
-| -------- | -------- | -------- |
-| [preset] | _string_ | Optional |
+| Property | Type     | Required  | Default |
+| -------- | -------- | --------- | ------- |
+| [preset] | _string_ | _Optonal_ | `''`    |
 
-Setting this attribute to a valid preset name specifies automatically a value for `cellSize` and `fps` and creates the initial board state from a determined pattern.
+Setting this attribute to a valid preset name specifies automatically a value for `cellSize`, `fps`, and `isToroidal` if they haven't been already set and creates the initial board state from a determined pattern.
 If `preset` is invalid the board is created with random live cells.
-By default this is empty.
+Changing this value while running causes the game state to be reset.
 
 A list of every valid pattern name can be found in `PATTERN_NAMES`. Simply import it in your component file.
 

@@ -11,7 +11,7 @@ import { GameOfLifeBgComponent, PATTERN_NAMES } from 'ngx-game-of-life-bg';
 export class AppComponent {
     grid = false;
     isToroidal = true;
-    fps = 5;
+    fps = 60;
     size = 5;
     spawnRate = 0.3;
     run = true;

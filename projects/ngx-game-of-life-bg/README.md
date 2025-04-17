@@ -40,7 +40,7 @@ export class AppComponent {}
 And then use it in your template
 
 ```html
-<game-of-life-bg [(cellSize)]="size" [(fps)]="fps" [showGrid]="grid" gridColor="#FFFFFF" [advanceGame]="run" [preset]="pattern" />
+<ngx-game-of-life-bg [(cellSize)]="size" [(fps)]="fps" [showGrid]="grid" gridColor="#FFFFFF" [advanceGame]="run" [preset]="pattern" />
 ```
 
 ## Options
@@ -51,7 +51,7 @@ And then use it in your template
 -   [[(cellSize)]](#cellSize)
 -   [[cellColor]](#cellColor)
 -   [[(fps)]](#fps)
--   [[isToroidal]](#isToroidal)
+-   [[(isToroidal)]](#isToroidal)
 -   [[spawnRate]](#spawnRate)
 -   [[advanceGame]](#advanceGame)
 -   [[preset]](#preset)
@@ -66,7 +66,7 @@ If `true` a grid is displayed over the board.
 The default value is `false`.
 
 ```html
-<game-of-life-bg showGrid="true" />
+<ngx-game-of-life-bg showGrid="true" />
 ```
 
 #### [gridColor]
@@ -80,7 +80,7 @@ Accepts only HEX color formats (`'#ffffff'`).
 The default value is `'#000000'`.
 
 ```html
-<game-of-life-bg gridColor="#ffffff" />
+<ngx-game-of-life-bg gridColor="#ffffff" />
 ```
 
 #### [backgroundColor]
@@ -94,7 +94,7 @@ Accepts only HEX color formats (`'#ffffff'`).
 The default value is `'#001a44'`.
 
 ```html
-<game-of-life-bg backgroundColor="#001a44" />
+<ngx-game-of-life-bg backgroundColor="#001a44" />
 ```
 
 #### [cellSize]
@@ -110,11 +110,11 @@ The default value is `5`.
 Supports two-way binding (see [[preset]](#preset))
 
 ```html
-<game-of-life-bg cellSize="20" />
+<ngx-game-of-life-bg cellSize="20" />
 ```
 
 ```html
-<game-of-life-bg [(cellSize)]="size" />
+<ngx-game-of-life-bg [(cellSize)]="size" />
 ```
 
 #### [cellColor]
@@ -128,7 +128,7 @@ Accepts only HEX color formats (`'#ffffff'`).
 The default value is `'#ffffff'`.
 
 ```html
-<game-of-life-bg cellColor="#ffffff" />
+<ngx-game-of-life-bg cellColor="#ffffff" />
 ```
 
 #### [fps]
@@ -137,17 +137,32 @@ The default value is `'#ffffff'`.
 | ---------------- | -------- | -------- |
 | [fps] or [(fps)] | _number_ | Optional |
 
+The framerate of the simulation. Every frame the game is advanced by 1 step and the board is redrawn.
+The default value is `60`.
+
+Supports two-way binding (see [[preset]](#preset))
+
+```html
+<ngx-game-of-life-bg cellSize="20" />
+```
+
+```html
+<ngx-game-of-life-bg [(cellSize)]="size" />
+```
+
 #### [isToroidal]
 
-| Property     | Type      | Required |
-| ------------ | --------- | -------- |
-| [isToroidal] | _boolean_ | Optional |
+| Property                       | Type      | Required |
+| ------------------------------ | --------- | -------- |
+| [isToroidal] or [(isToroidal)] | _boolean_ | Optional |
 
 With `true` the board is treated as if opposing sides are connected, with `false` the board is treated as a closed grid and every cell outside the borders is considered dead.
 The default value is `true`.
 
+Supports two-way binding (see [[preset]](#preset))
+
 ```html
-<game-of-life-bg isToroidal="true" />
+<ngx-game-of-life-bg isToroidal="true" />
 ```
 
 #### [spawnRate]
@@ -160,7 +175,7 @@ Controls the percentage of live cells when creating a random board. The percenta
 The default value is `0.3`.
 
 ```html
-<game-of-life-bg spawnRate="0.3" />
+<ngx-game-of-life-bg spawnRate="0.3" />
 ```
 
 #### [advanceGame]
@@ -173,7 +188,7 @@ If `true` the game state is advanced by one step every frame.
 The default value is `true`.
 
 ```html
-<game-of-life-bg advanceGame="true" />
+<ngx-game-of-life-bg advanceGame="true" />
 ```
 
 #### [preset]
@@ -182,30 +197,18 @@ The default value is `true`.
 | -------- | -------- | -------- |
 | [preset] | _string_ | Optional |
 
-#### [page]
+Setting this attribute to a valid preset name specifies automatically a value for `cellSize` and `fps` and creates the initial board state from a determined pattern.
+If `preset` is invalid the board is created with random live cells.
+By default this is empty.
 
-| Property           | Type     | Required                                                                |
-| ------------------ | -------- | ----------------------------------------------------------------------- |
-| [page] or [(page)] | _number_ | _Required_ with [show-all]="false" or _Optional_ with [show-all]="true" |
+A list of every valid pattern name can be found in `PATTERN_NAMES`. Simply import it in your component file.
 
-Page number
-
-```
-[page]="1"
+```typescript
+import { PATTERN_NAMES } from "ngx-game-of-life-bg";
 ```
 
-supports two way data binding as well
-
-```
-[(page)]="pageVariable"
-```
-
-If you want that the `two way data binding` actually updates your `page` variable on page change/scroll - you have to be sure that you define the height of the container, for example:
-
-```css
-pdf-viewer {
-    height: 100vh;
-}
+```html
+<ngx-game-of-life-bg preset="lightspeedoscillator3" />
 ```
 
 ## License

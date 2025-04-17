@@ -124,7 +124,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
     fps = model(FPS);
 
     /** Determines if the board should be treated as a toroidal surface. Default is true */
-    isToroidal = input(IS_TOROIDAL);
+    isToroidal = model(IS_TOROIDAL);
 
     /** Percentage of live cells created when setting up a random board. Default is 0.3 */
     spawnRate = input(SPAWN_RATE);
@@ -148,7 +148,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
                 this.gridContext().clearRect(0, 0, this.width(), this.height());
         });
 
-        /** Triggers when `preset`, `cellSize`, `spawnRate` (if preset is random) or `isToroidal` (if preset is random) change */
+        /** Triggers when `preset`, `cellSize`, `spawnRate` (if preset is random) or `isToroidal` change */
         effect(() => {
             this.resetBoard();
         });
@@ -159,6 +159,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
             if (preset !== 'random') {
                 this.cellSize.set(PATTERNS[preset].cellSize);
                 this.fps.set(PATTERNS[preset].fps);
+                this.isToroidal.set(PATTERNS[preset].isToroidal);
             }
         });
 
@@ -258,7 +259,7 @@ export class GameOfLifeBgComponent implements AfterViewInit {
                 width,
                 height,
                 PATTERNS[pattern].rle,
-                PATTERNS[pattern].isToroidal
+                this.isToroidal()
             );
     }
 

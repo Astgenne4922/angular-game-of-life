@@ -1,16 +1,19 @@
 import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { GameOfLifeBgComponent, PATTERN_NAMES } from 'ngx-game-of-life-bg';
 
 @Component({
     selector: 'app-root',
-    imports: [GameOfLifeBgComponent],
+    imports: [GameOfLifeBgComponent, FormsModule],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss',
 })
 export class AppComponent {
     grid = false;
-    fps = 60;
+    isToroidal = true;
+    fps = 5;
     size = 5;
+    spawnRate = 0.3;
     run = true;
     pattern = PATTERN_NAMES[Math.floor(Math.random() * PATTERN_NAMES.length)];
 

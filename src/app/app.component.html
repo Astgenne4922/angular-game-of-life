@@ -1,9 +1,11 @@
 <game-of-life-bg
     #gol
-    [(cellSize)]="size"
-    [(fps)]="fps"
     [showGrid]="grid"
     gridColor="#FFFFFF"
+    [(cellSize)]="size"
+    [(fps)]="fps"
+    [(isToroidal)]="isToroidal"
+    [spawnRate]="spawnRate"
     [advanceGame]="run"
     [preset]="pattern"
 />
@@ -16,4 +18,14 @@
 <button (click)="sizeUp()">SIZE +</button>
 <button (click)="sizeDown()">SIZE -</button>
 <button (click)="changePattern()">CHANGE PATTERN</button>
+<button (click)="isToroidal = !isToroidal">TOROIDAL = {{ isToroidal }}</button>
+<input
+    type="number"
+    name="rate"
+    id="rate"
+    [(ngModel)]="spawnRate"
+    min="0"
+    step="0.1"
+    max="1"
+/>
 <button (click)="pattern = ''">RANDOM</button>

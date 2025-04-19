@@ -1,6 +1,6 @@
 {
     "name": "ngx-game-of-life-bg",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Angular 19+ background component playing The Game of Life",
     "license": "MIT",
     "private": false,

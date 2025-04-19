@@ -203,6 +203,8 @@ export class GameOfLifeBgComponent implements AfterViewInit {
         this.bgContext().fillStyle = this.backgroundColor();
         this.bgContext().fillRect(0, 0, width, height);
 
+        if (this.showGrid()) this.drawGrid();
+
         this.resetBoard();
     }
 

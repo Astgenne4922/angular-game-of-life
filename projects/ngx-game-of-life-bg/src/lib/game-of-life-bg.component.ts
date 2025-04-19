@@ -27,12 +27,12 @@ import { PATTERNS } from './game-of-life-bg.presets';
  *
  * A grid can be show over the board by setting the `showGrid` attribute. The grid is off by default
  * ```html
- * <game-of-life-bg showGrid="true"/>
+ * <ngx-game-of-life-bg showGrid="true"/>
  * ```
  *
  * Colors for the background, the cells and the grid can be set with the respective attributes
  * ```html
- * <game-of-life-bg
+ * <ngx-game-of-life-bg
  *      backgroundColor="#001a44"
  *      gridColor="#ffffff"
  *      cellColor="#ffffff"
@@ -42,45 +42,45 @@ import { PATTERNS } from './game-of-life-bg.presets';
  * The cells' size can be changed with the `cellSize` attribute. Changing this value causes the game state to be reset to a fresh board.
  * The size is 5 pixels by default.
  * ```html
- * <game-of-life-bg cellSize="5"/>
+ * <ngx-game-of-life-bg cellSize="5"/>
  * ```
  *
  * The speed of the game can be controlled with the `fps` attribute. Every frame the game state is advanced and the board is redrawn.
  * The default value is 60. The update loop is managed by `window.requestAnimationFrame` which is automatically paused by the browser
  * when the page is hidden.
  * ```html
- * <game-of-life-bg fps="60"/>
+ * <ngx-game-of-life-bg fps="60"/>
  * ```
  *
  * The board logic can be changed by setting `isToroidal` to true for a toroidal board (every siede is connected to the opposite) or false
- * for a closed grid spanning the entire screen (everything outside the screen is considered a dead cell)
+ * for a closed grid spanning the entire screen (everything outside the screen is considered a dead cell). Changing this value while running causes the game state to be reset.
  * ```html
- * <game-of-life-bg isToroidal="true"/>
+ * <ngx-game-of-life-bg isToroidal="true"/>
  * ```
  *
  * The game simulation can be freely started and stopped by changing the `advanceGame` attribute. By default the game starts as soon as
  * the the view is initialized
  * ```html
- * <game-of-life-bg advanceGame="true"/>
+ * <ngx-game-of-life-bg advanceGame="true"/>
  * ```
  *
  * The initial board state can be controlled by the `preset` attribute. Setting this attribute to a valid preset name (see {@link PRESETS})
  * specifies automatically a value for `cellSize` and `fps` if it's not already present and creates the initial board state from a determined pattern.
- * If `preset` is invalid the board is created with random live cells .
+ * If `preset` is invalid the board is created with random live cells.
  * By default `preset` is empty.
  * ```html
- * <game-of-life-bg preset="lightspeedoscillator3"/>
+ * <ngx-game-of-life-bg preset="lightspeedoscillator3"/>
  * ```
  *
  * When creating a random board the percentage of live cell can by selected using the `spawnRate` attribute. The default value is 0.3
  * ```html
- * <game-of-life-bg spawnRate="0.3"/>
+ * <ngx-game-of-life-bg spawnRate="0.3"/>
  * ```
  *
  * Unless specified changing an attribute while the game is running doesn't reset the board state.
  */
 @Component({
-    selector: 'game-of-life-bg',
+    selector: 'ngx-game-of-life-bg',
     templateUrl: './game-of-life-bg.component.html',
     styleUrls: ['./game-of-life-bg.component.css'],
     host: { '(window:resize)': 'onResize()' },

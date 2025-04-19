@@ -7,7 +7,7 @@
         "build": "ng build",
         "watch": "ng build --watch --configuration development",
         "test": "ng test",
-        "publish": "ng build & copy README.md dist/ngx-game-of-life-bg & copy LICENSE dist/ngx-game-of-life-bg & cd dist/ngx-game-of-life-bg & npm publish"
+        "publish": "ng build & copy README.md dist\\ngx-game-of-life-bg & copy LICENSE dist\\ngx-game-of-life-bg & cd dist/ngx-game-of-life-bg & npm publish"
     },
     "private": true,
     "dependencies": {

@@ -4,7 +4,7 @@
 
 ### Demo page
 
-[https://astgenne4922.github.io/angular-game-of-life/](https://astgenne4922.github.io/angular-game-of-life/)
+[https://astgenne4922.github.io/ng-game-of-life/](https://astgenne4922.github.io/ng-game-of-life/)
 
 ## Overview
 
